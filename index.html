@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>İKÇÜ Lab Randevu - v2.2.1</title>
+  <script src="https://cdn.jsdelivr.net/npm/appwrite@13.0.1"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <style>
+    :root { --primary: #0066cc; --admin: #2c3e50; --danger: #e74c3c; --success: #27ae60; --warning: #f39c12; --info: #17a2b8; --occupied-other: #fdeaea; --occupied-me: #e3f2fd; --selected: #218838; --blocked: #636e72; --pending: #ff9f43; --holiday: #fff3e0; }
+    body { font-family: 'Segoe UI', sans-serif; background: #f4f7f9; margin: 0; padding: 20px; display: flex; justify-content: center; min-height: 100vh; position: relative; align-items: center; }
+    .version-tag { position: fixed; bottom: 10px; left: 10px; font-size: 11px; color: #888; z-index: 1000; font-weight: bold; background: rgba(255,255,255,0.7); padding: 2px 5px; border-radius: 4px; }
+    .box { background: #fff; padding: 30px; width: 100%; max-width: 1200px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); position: relative; z-index: 1; }
+    .hidden { display: none !important; }
+    h2, h3 { color: #333; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-top: 0; }
+    
+    /* GİRİŞ & LOGO */
+    .login-wrapper { max-width: 400px; margin: 0 auto; text-align: center; }
+    .login-header i { font-size: 45px; color: var(--primary); margin-bottom: 15px; display: block; }
+    .input-group { position: relative; margin-bottom: 12px; }
+    .input-group i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #95a5a6; z-index: 2; font-size: 14px; }
+    .input-group input, .input-group select { padding-left: 35px; width: 100%; box-sizing: border-box; }
+    select, input, button { width: 100%; padding: 12px; margin-top: 8px; border-radius: 8px; border: 1px solid #ddd; box-sizing: border-box; font-size: 14px; transition: 0.3s; }
+    .main-btn { background: var(--primary); color: white; border: none; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 15px; }
+    
+    /* TABS */
+    .tab-nav { display: flex; border-bottom: 2px solid #eee; margin-bottom: 20px; overflow-x: auto; }
+    .tab-btn { flex: 1; padding: 15px; background: none; border: none; font-weight: bold; color: #666; cursor: pointer; border-bottom: 3px solid transparent; transition: 0.3s; font-size: 13px; margin-top: 0; border-radius: 8px 8px 0 0; white-space: nowrap; }
+    .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); background: #f0f7ff; }
+    
+    /* TABLO & HÜCRELER */
+    .cal-table { width: 100%; border-collapse: collapse; background: white; min-width: 600px; }
+    .cal-table th, .cal-table td { border: 1px solid #eee; padding: 12px; text-align: center; font-size: 12px; transition: 0.2s; user-select: none; }
+    .cal-table th { background: #f8f9fa; color: #666; }
+    .slot-free { color: var(--success); font-weight: bold; cursor: pointer; }
+    .slot-selected { background-color: var(--success) !important; color: white !important; }
+    .slot-me { background: var(--occupied-me); color: var(--primary); font-weight: bold; cursor: not-allowed; }
+    .slot-other { background: var(--occupied-other); color: var(--danger); font-weight: bold; cursor: not-allowed; }
+    .slot-inactive { background: #f2f2f2; color: #a0a0a0; font-style: italic; cursor: not-allowed; }
+    .slot-blocked { background: var(--blocked); color: white; font-weight: bold; cursor: not-allowed; }
+    .slot-pending { background: var(--pending) !important; color: white !important; border: 2px dashed #e67e22 !important; cursor: pointer; }
+    .slot-admin-clickable { cursor: pointer !important; }
+    
+    /* BADGES & BUTONLAR */
+    .badge-completed { background: #d4edda; color: #155724; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; border: 1px solid #c3e6cb; }
+    .badge-noshow { background: #f8d7da; color: #721c24; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; border: 1px solid #f5c6cb; }
+    .badge-pending { background: #fff3cd; color: #856404; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; border: 1px solid #ffeeba; }
+    .btn-complete { background: var(--success); color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 11px; margin-right: 3px; }
+    .btn-noshow { background: var(--danger); color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 11px; margin-right: 3px; }
+    .delete-btn { background: var(--danger); color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 11px; }
+    .edit-btn { background: var(--warning); color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 11px; margin-right: 3px; }
+    .info-btn { background: var(--info); color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 11px; margin-right: 3px; font-weight: bold; }
+    
+    table.res-table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 13px; }
+    .res-table th, .res-table td { text-align: left; padding: 10px; border-bottom: 1px solid #eee; }
+    .res-table th { background: #f8f9fa; color: #555; }
+    
+    .holiday-msg { background: var(--holiday); color: #e65100; padding: 15px; border-radius: 8px; text-align: center; font-weight: bold; margin-bottom: 15px; border: 1px solid #ffe0b2; }
+    .verify-msg { padding: 15px; border-radius: 8px; text-align: center; font-weight: bold; margin-bottom: 15px; font-size: 14px; }
+    .verify-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+    .verify-error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+    
+    /* BAN UYARISI */
+    .ban-alert { background: #ffdede; color: #c0392b; padding: 15px; border-radius: 8px; font-weight: bold; margin-bottom: 20px; border: 1px solid #e74c3c; display:flex; align-items:center; gap:10px; font-size:14px; }
+    .ban-alert i { font-size: 20px; }
+
+    /* MODAL */
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 9999; }
+    .modal.active { display: flex !important; }
+    .modal-content { background: white; padding: 25px; border-radius: 10px; width: 90%; max-width: 500px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); position: relative; }
+    .close-modal { position: absolute; top: 10px; right: 15px; font-size: 24px; cursor: pointer; font-weight: bold; color: #666; }
+    .log-box { background: #f8f9fa; padding: 10px; border: 1px solid #ddd; border-radius: 5px; max-height: 200px; overflow-y: auto; font-family: monospace; font-size: 11px; margin-top: 10px; white-space: pre-wrap; color: #333; }
+  </style>
+</head>
+<body>
+
+<div class="version-tag">v2.2.1</div>
+
+<div id="app" class="box">
+    <div id="loginPage" class="login-wrapper">
+        <div class="login-header"><i class="fa-solid fa-flask-vial" style="font-size:45px; color:var(--primary);"></i><h2>İKÇÜ Metalurji ve Malzeme</h2><h3>Laboratuvar Randevu</h3></div>
+        <div id="verifyMessage" class="hidden verify-msg"></div>
+        <div class="input-group"><i class="fa-solid fa-building-columns"></i><select id="loginDomain"><option value="@ogr.ikc.edu.tr">Öğrenci</option><option value="@ikc.edu.tr">Akademik</option></select></div>
+        <div class="input-group"><i class="fa-solid fa-user-graduate"></i><input id="loginId" type="text" placeholder="Öğrenci No."></div>
+        <div class="input-group"><i class="fa-solid fa-lock"></i><input id="loginPass" type="password" placeholder="Şifre"></div>
+        <button class="main-btn" onclick="handleLogin()">Giriş Yap</button>
+        <div style="text-align:center; margin-top:20px;"><a href="#" onclick="switchPage('registerPage')" style="color:var(--primary); text-decoration:none;">Yeni Hesap Oluştur</a></div>
+    </div>
+
+    <div id="registerPage" class="hidden login-wrapper">
+        <div class="login-header"><h2>Yeni Kayıt</h2></div>
+        <div class="input-group"><i class="fa-solid fa-building-columns"></i><select id="regDomain"><option value="@ogr.ikc.edu.tr">Öğrenci</option><option value="@ikc.edu.tr">Akademik</option></select></div>
+        <div class="input-group"><i class="fa-solid fa-id-card"></i><input id="regId" type="text" placeholder="ID (Örn: y24...)"></div>
+        <div class="input-group"><i class="fa-solid fa-user"></i><input id="regFullName" type="text" placeholder="Ad Soyad"></div>
+        <div class="input-group"><i class="fa-solid fa-phone"></i><input id="regPhone" type="tel" placeholder="Telefon No"></div>
+        <div class="input-group"><i class="fa-solid fa-lock"></i><input id="regPass" type="password" placeholder="Şifre"></div>
+        <button class="main-btn" onclick="handleRegister()">Kayıt Ol</button>
+        <button onclick="switchPage('loginPage')" style="background:none; border:none; color:#666; cursor:pointer; margin-top:10px;">Geri Dön</button>
+    </div>
+
+    <div id="bookingPage" class="hidden">
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #eee; padding-bottom:15px; margin-bottom:20px;">
+            <h2 id="userGreet" style="border:none; margin:0;">Hoş Geldiniz</h2>
+            <div id="adminLink" class="hidden"><button onclick="switchPage('adminPage')" style="background:var(--admin); color:white; padding:10px; border-radius:8px; border:none; font-weight:bold;">Admin Paneli</button></div>
+        </div>
+
+        <div id="userBanAlert" class="ban-alert hidden"></div>
+
+        <div class="tab-nav">
+            <button id="btn-makeRes" class="tab-btn active" onclick="openUserTab('makeRes')"><i class="fa-regular fa-calendar-plus"></i> Randevu Al</button>
+            <button id="btn-myRes" class="tab-btn" onclick="openUserTab('myRes')"><i class="fa-solid fa-list-check"></i> Randevularım</button>
+        </div>
+        
+        <div id="tab-makeRes" class="tab-content">
+            <div id="quotaDisplay" class="quota-card hidden"><span>Yükleniyor...</span></div>
+            <div id="editModeNotice" class="hidden" style="background:#fff3cd; color:#856404; padding:10px; border-radius:8px; margin-bottom:15px;">⚠️ Düzenleme Modu</div>
+            <div id="labInfoCard" class="info-card hidden"></div>
+            <div style="background:#eef6ff; padding:15px; border-radius:10px; margin-bottom:20px;">
+                <label>1. Laboratuvar ve Tarih</label>
+                <div style="display:flex; gap:10px;">
+                    <select id="labSelect" onchange="refreshView()" style="flex:2;"><option value="">Seçiniz...</option><option value="Malzeme Karakterizasyon Lab.">Malzeme Karakterizasyon Lab.</option><option value="Numune Hazırlama Lab.">Numune Hazırlama Lab.</option><option value="Üretim Lab.">Üretim Lab.</option></select>
+                    <input id="resDate" type="date" onchange="refreshView()" style="flex:1;">
+                </div>
+            </div>
+            <div id="statusSection" class="hidden">
+                <div id="holidayNotice" class="holiday-msg hidden"></div>
+                <div id="calendarContent">
+                    <h3>Randevu Tablosu</h3>
+                    <div class="calendar-container"><table class="cal-table"><thead id="calHead"></thead><tbody id="calBody"></tbody></table></div>
+                    <button class="main-btn" onclick="saveBooking()">Seçili Randevuyu Kaydet</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-myRes" class="tab-content hidden">
+            <h3>Randevularım</h3>
+            <table class="res-table"><thead><tr><th>Lab / Cihaz</th><th>Durum</th><th>Zaman</th><th>İşlem</th></tr></thead><tbody id="userBody"></tbody></table>
+        </div>
+        <button onclick="logout()" style="background:#666; color:white; margin-top:20px; width:auto; padding:10px 20px;">Çıkış Yap</button>
+    </div>
+
+    <div id="adminPage" class="hidden admin-mode">
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #eee; padding-bottom:15px; margin-bottom:20px;">
+            <h2 style="border:none; margin:0; color:var(--admin);">Admin Paneli</h2>
+            <button onclick="switchPage('bookingPage')" style="background:var(--primary); color:white; border:none; padding:10px; border-radius:8px;">Panele Dön</button>
+        </div>
+        <div class="tab-nav">
+            <button id="btn-adm-list" class="tab-btn active" onclick="openAdminTab('list')"><i class="fa-solid fa-list"></i> Randevular</button>
+            <button id="btn-adm-users" class="tab-btn" onclick="openAdminTab('users')"><i class="fa-solid fa-users"></i> Kullanıcılar</button>
+            <button id="btn-adm-equip" class="tab-btn" onclick="openAdminTab('equip')"><i class="fa-solid fa-screwdriver-wrench"></i> Envanter</button>
+            <button id="btn-adm-cal" class="tab-btn" onclick="openAdminTab('cal')"><i class="fa-regular fa-clock"></i> Doluluk</button>
+        </div>
+
+        <div id="adm-list" class="tab-content">
+            <table class="res-table"><thead><tr><th>ID</th><th>Kullanıcı</th><th>Lab / Cihaz</th><th>Zaman</th><th>Durum</th><th>İşlem</th></tr></thead><tbody id="adminBody"></tbody></table>
+        </div>
+        <div id="adm-users" class="tab-content hidden">
+            <div style="background:#fdfdfd; padding:20px; border-radius:10px; border:1px solid #ddd;">
+                <div style="max-height:400px; overflow-y:auto;"><table class="res-table"><thead><tr><th>ID</th><th>Ad Soyad</th><th>Telefon</th><th>Durum</th><th>İşlem</th></tr></thead><tbody id="userProfilesBody"></tbody></table></div>
+            </div>
+        </div>
+        <div id="adm-equip" class="tab-content hidden">
+            <div id="adminEquipList"></div>
+            <select id="adminLabSelect" onchange="listAdminEquipments()"><option value="Malzeme Karakterizasyon Lab.">Karakterizasyon</option><option value="Numune Hazırlama Lab.">Numune Hazırlama</option><option value="Üretim Lab.">Üretim</option></select>
+            <button onclick="listAdminEquipments()">Listele</button>
+        </div>
+        <div id="adm-cal" class="tab-content hidden">
+            <select id="adminViewLab" onchange="loadAdminCalendar()"><option value="Malzeme Karakterizasyon Lab.">Malzeme Karakterizasyon Lab.</option><option value="Numune Hazırlama Lab.">Numune Hazırlama Lab.</option><option value="Üretim Lab.">Üretim</option></select>
+            <input id="adminViewDate" type="date" onchange="loadAdminCalendar()">
+            <div class="calendar-container"><table class="cal-table"><thead id="adminCalHead"></thead><tbody id="adminCalBody"></tbody></table></div>
+            <button id="saveAdminCalBtn" class="save-envanter-btn hidden" onclick="saveAdminCalendarChanges()">Değişiklikleri Kaydet</button>
+        </div>
+    </div>
+
+    <div id="detailModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModal()">×</span>
+            <h3>Randevu Detayları</h3>
+            <div id="modalDetails"></div>
+            <h4>İşlem Geçmişi</h4>
+            <div id="modalLogs" class="log-box"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+const { Client, Account, Databases, ID, Query } = Appwrite;
+const client = new Client().setEndpoint('https://cloud.appwrite.io/v1').setProject('6981c32f00212fb21625');
+const account = new Account(client);
+const databases = new Databases(client);
+
+// EMAILSJS
+const EMAILJS_SERVICE_ID = "service_bnjn6pj"; 
+const EMAILJS_PUBLIC_KEY = "GoSBRo0EMVNlIyZSK";
+const EMAILJS_TEMPLATE_ID = "template_mifux1n"; 
+(function(){ emailjs.init(EMAILJS_PUBLIC_KEY); })();
+
+const DB_ID = '6981c42a00202c6cdf0e';
+const COLL_APP = 'appointments';
+const COLL_EQUIP = 'equipments';
+const COLL_PROFILES = 'profiles'; 
+
+const SUPER_ADMINS = ["oktay.kemah@ikc.edu.tr", "saadet.guler@ikc.edu.tr", "metehan.atagur@ikc.edu.tr", "berk.ozler@ikc.edu.tr"];
+const hours = ["09:00-10:00", "10:00-11:00", "11:00-12:00", "12:00-13:00", "13:00-14:00", "14:00-15:00", "15:00-16:00", "16:00-17:00"];
+const restrictedHours = ["09:00-10:00", "16:00-17:00"];
+
+let currentUser = null, editingId = null, editingOwner = null, editingHistory = "";
+let appointmentsMap = {}, userMap = {}, equipmentTypeMap = {}, selectedCells = [], tempAdminChanges = [];
+
+function formatDate(dateStr) { if (!dateStr) return ""; const d = new Date(dateStr); return `${d.getDate().toString().padStart(2, '0')}.${(d.getMonth() + 1).toString().padStart(2, '0')}.${d.getFullYear()}`; }
+function getWeekNumber(d) { d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())); d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay()||7)); var yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1)); return [d.getUTCFullYear(), Math.ceil(( ( (d - yearStart) / 86400000) + 1)/7)]; }
+function getHoliday(dateStr) { const d = new Date(dateStr), day = d.getDay(), monthDay = (d.getMonth() + 1) + "-" + d.getDate(); if (day === 0 || day === 6) return "Hafta Sonu (Laboratuvar Kapalı)"; const h = {"1-1":"Yılbaşı","4-23":"23 Nisan","5-1":"1 Mayıs","5-19":"19 Mayıs","7-15":"15 Temmuz","8-30":"30 Ağustos","10-29":"29 Ekim"}; return h[monthDay] || null; }
+function canProcess(dateStr, type) { if (SUPER_ADMINS.includes(currentUser?.email)) return true; const t = new Date(dateStr); t.setHours(0,0,0,0); const now = new Date(); now.setHours(0,0,0,0); if (type === 'booking') return t > now; const diff = Math.ceil((t - now) / (86400000)); if (type === 'delete') return diff >= 1; if (type === 'edit') return diff >= 2; return false; }
+function sendEmail(to, sub, msg) { if(Array.isArray(to)){to.forEach(e=>emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {to_email:e, subject:sub, message:msg}));} else {emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {to_email:to, subject:sub, message:msg});} }
+
+// --- YENİ EKLENEN: BAN SÜRESİ HESAPLAMA ---
+function getBanRemaining(banDateStr) {
+    if(!banDateStr) return null;
+    const banStart = new Date(banDateStr);
+    const banEnd = new Date(banStart.getTime() + (30 * 24 * 60 * 60 * 1000)); // 30 Gün
+    const now = new Date();
+    const diff = banEnd - now;
+    if(diff <= 0) return 0; // Süre Doldu
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    return `${days} Gün ${hours} Saat`;
+}
+
+// --- AUTH & USER ---
+async function handleRegister() { 
+    const idVal = document.getElementById("regId").value.trim(), email = idVal + document.getElementById("regDomain").value, pass = document.getElementById("regPass").value, name = document.getElementById("regFullName").value, phone = document.getElementById("regPhone").value.trim();
+    if(!phone) return alert("Telefon zorunlu!");
+    try { 
+        await account.create(ID.unique(), email, pass, name); await account.createEmailSession(email, pass); await account.updatePrefs({ phone: phone });
+        // NOT: Email'i createDocument'dan çıkardık (eski v2.1.2 gibi), veritabanı ayarına gerek kalmaz.
+        try { await databases.createDocument(DB_ID, COLL_PROFILES, ID.unique(), { studentId: idVal, name: name, phone: phone, blacklisted: false }); } catch(dbError) { console.error("DB Error:", dbError); }
+        await account.createVerification("https://oktaykemah.github.io/lab-randevu/"); alert("Kayıt Başarılı! Mail gönderildi."); await account.deleteSession('current'); switchPage('loginPage'); 
+    } catch (e) { alert("Hata: " + e.message); } 
+}
+async function handleLogin() { const email = document.getElementById("loginId").value.trim() + document.getElementById("loginDomain").value; try { await account.createEmailSession(email, document.getElementById("loginPass").value); location.reload(); } catch (e) { alert(e.message); } }
+async function logout() { await account.deleteSession('current'); location.reload(); }
+
+async function checkSession() { 
+    try { 
+        currentUser = await account.get(); 
+        document.getElementById("loginPage").classList.add("hidden"); 
+        document.getElementById("bookingPage").classList.remove("hidden"); 
+        document.getElementById("userGreet").innerText = "Merhaba, " + currentUser.name; 
+        
+        // OTOMATİK AF & BAN KONTROL
+        await checkUserBanStatus();
+
+        if(SUPER_ADMINS.includes(currentUser.email)) { 
+            document.getElementById("adminLink").classList.remove("hidden"); 
+            await loadUserProfiles(); listAdminEquipments(); loadAdminData(); 
+        } 
+        loadUserData(); 
+    } catch (e) {} 
+}
+
+// --- YENİ EKLENEN: OTOMATİK AF FONKSİYONU ---
+async function checkUserBanStatus() {
+    try {
+        // Profili çek (Appwrite'da email attribute zorunlu olmasın)
+        // NOT: Email attribute'u olmayan eski kullanıcılar için isimle arıyoruz
+        let p = await databases.listDocuments(DB_ID, COLL_PROFILES, [Query.equal('name', currentUser.name)]);
+        if (p.documents.length > 0) {
+            const user = p.documents[0];
+            if (user.blacklisted) {
+                const remaining = getBanRemaining(user.banDate);
+                if (remaining === 0) {
+                    // SÜRE DOLMUŞ -> AFFET
+                    await databases.updateDocument(DB_ID, COLL_PROFILES, user.$id, { blacklisted: false, banDate: null });
+                    document.getElementById("userBanAlert").classList.add("hidden");
+                } else if (remaining) {
+                    // SÜRE VAR -> GÖSTER
+                    const alertBox = document.getElementById("userBanAlert");
+                    alertBox.innerHTML = `<i class="fa-solid fa-ban"></i> <span>DİKKAT: Kara listedesiniz. Cezanızın bitmesine: <b>${remaining}</b> kaldı.</span>`;
+                    alertBox.classList.remove("hidden");
+                }
+            } else {
+                document.getElementById("userBanAlert").classList.add("hidden");
+            }
+        }
+    } catch(e) { console.error("Ban kontrol hatası:", e); }
+}
+
+// --- DATA & BOOKING ---
+async function checkUserQuota(targetDate) {
+    if(SUPER_ADMINS.includes(currentUser.email)) return { short: 0, long: 0, ok: true };
+    const w = getWeekNumber(new Date(targetDate));
+    const res = await databases.listDocuments(DB_ID, COLL_APP, [Query.equal('name', currentUser.name), Query.limit(100)]);
+    let s=0, l=0;
+    for(let d of res.documents) {
+        if(editingId && d.$id === editingId) continue;
+        const dw = getWeekNumber(new Date(d.date));
+        if (dw[0]===w[0] && dw[1]===w[1]) {
+            const t = equipmentTypeMap[d.equipment] || 'short';
+            if (t==='long') l += Math.floor(d.time.split(', ').length/3)||1; else s += d.time.split(', ').length;
+        }
+    }
+    return { short: s, long: l, ok: true };
+}
+
+async function saveBooking() {
+    // 0. KARA LİSTE KONTROLÜ
+    try {
+        const p = await databases.listDocuments(DB_ID, COLL_PROFILES, [Query.equal('name', currentUser.name)]);
+        if (p.documents.length > 0 && p.documents[0].blacklisted) {
+            const rem = getBanRemaining(p.documents[0].banDate);
+            return alert(`🚫 Kara listedesiniz. Randevu alamazsınız.\nKalan Süre: ${rem || "Hesaplanıyor..."}`);
+        }
+    } catch(e){}
+
+    const lab = document.getElementById("labSelect").value, date = document.getElementById("resDate").value;
+    if (selectedCells.length === 0) return alert("Seçim yapınız!");
+    
+    let ps=0, pl=0; const uq = [...new Set(selectedCells.map(s => s.equip))];
+    uq.forEach(eq => { const t = equipmentTypeMap[eq] || 'short'; if (t==='long') pl += Math.floor(selectedCells.filter(s=>s.equip===eq).length/3); else ps += selectedCells.filter(s=>s.equip===eq).length; });
+    const stats = await checkUserQuota(date);
+    if ((stats.short + ps) > 15) return alert("Kısa süreli kota doldu!");
+    if ((stats.long + pl) > 3) return alert("Uzun süreli kota doldu!");
+
+    const conflictRes = await databases.listDocuments(DB_ID, COLL_APP, [Query.equal('date', date), Query.equal('lab', lab)]);
+    for (let c of selectedCells) { if (conflictRes.documents.find(d => d.$id !== editingId && d.equipment.includes(c.equip) && d.time.includes(c.time) && d.name !== "LAB_ACIK")) return alert("Çakışma var!"); }
+
+    let owner = currentUser.name, hist = `Oluşturuldu: ${currentUser.name}\n`;
+    if(editingId) { await databases.deleteDocument(DB_ID, COLL_APP, editingId); owner = editingOwner; hist = editingHistory + `Düzenlendi: ${currentUser.name}\n`; }
+
+    try {
+        for (let eq of uq) {
+            const t = equipmentTypeMap[eq] || 'short';
+            const times = selectedCells.filter(s => s.equip === eq).map(s => s.time);
+            if (t === 'long') {
+                const am = ["10:00-11:00", "11:00-12:00", "12:00-13:00"], pm = ["13:00-14:00", "14:00-15:00", "15:00-16:00"];
+                if(am.every(h=>times.includes(h))) await databases.createDocument(DB_ID, COLL_APP, ID.unique(), { name: owner, lab, date, equipment: eq, time: am.join(', '), history: hist, status: 'pending' });
+                if(pm.every(h=>times.includes(h))) await databases.createDocument(DB_ID, COLL_APP, ID.unique(), { name: owner, lab, date, equipment: eq, time: pm.join(', '), history: hist, status: 'pending' });
+            } else {
+                await databases.createDocument(DB_ID, COLL_APP, ID.unique(), { name: owner, lab, date, equipment: eq, time: times.join(', '), history: hist, status: 'pending' });
+            }
+        }
+        alert("İşlem Başarılı!"); editingId = null; selectedCells = []; refreshView(); loadUserData(); 
+        if(SUPER_ADMINS.includes(currentUser.email)) loadAdminData();
+    } catch (e) { alert(e.message); }
+}
+
+// --- ADMIN ---
+async function loadUserProfiles() {
+    try {
+        const res = await databases.listDocuments(DB_ID, COLL_PROFILES, [Query.orderAsc('studentId')]);
+        document.getElementById("userProfilesBody").innerHTML = res.documents.map(u => {
+            // Admin Panelinde Geri Sayım
+            let statusText = 'Aktif', statusClass = 'badge-completed', btnText = 'Banla';
+            if (u.blacklisted) {
+                const rem = getBanRemaining(u.banDate);
+                if (rem === 0) { statusText = 'Süresi Doldu'; statusClass = 'badge-pending'; }
+                else { statusText = `KARA LİSTE (${rem || '?'})`; statusClass = 'badge-noshow'; }
+                btnText = 'Affet (Aç)';
+            }
+            return `<tr><td style="font-weight:bold;">${u.studentId}</td><td>${u.name}</td><td>${u.phone}</td><td><span class="${statusClass}">${statusText}</span></td><td><button onclick="toggleBlacklist('${u.$id}', ${u.blacklisted})">${btnText}</button></td></tr>`;
+        }).join('');
+        res.documents.forEach(u => userMap[u.name] = { id: u.studentId, phone: u.phone });
+    } catch(e) { console.error(e); }
+}
+
+async function toggleBlacklist(id, status) {
+    if(!confirm("Emin misiniz?")) return;
+    try {
+        const updateData = { blacklisted: !status };
+        // Banlarken Tarih At, Açarken Tarihi Sil
+        if (!status) updateData.banDate = new Date().toISOString(); else updateData.banDate = null;
+        await databases.updateDocument(DB_ID, COLL_PROFILES, id, updateData);
+        alert("Güncellendi."); loadUserProfiles();
+    } catch(e) { alert("Hata: " + e.message); }
+}
+
+async function markResStatus(id, type, name) {
+    if(!confirm("İşlem onaylansın mı?")) return;
+    try {
+        await databases.updateDocument(DB_ID, COLL_APP, id, { status: type==='completed'?'completed':'noshow' });
+        if(type==='noshow') {
+            const p = await databases.listDocuments(DB_ID, COLL_PROFILES, [Query.equal('name', name)]);
+            if(p.documents.length) {
+                try {
+                    // Kullanıcıyı banla + Tarih ekle
+                    await databases.updateDocument(DB_ID, COLL_PROFILES, p.documents[0].$id, { blacklisted: true, banDate: new Date().toISOString() });
+                    alert("Kullanıcı kara listeye alındı (30 Gün).");
+                } catch(banErr) { alert("Randevu işaretlendi ama kullanıcı banlanamadı: " + banErr.message); }
+            }
+        } else { alert("Tamamlandı olarak işaretlendi."); }
+        loadAdminData(); loadUserProfiles();
+    } catch(e) { alert("Hata: " + e.message); }
+}
+
+async function loadAdminData() {
+    try {
+        const res = await databases.listDocuments(DB_ID, COLL_APP, []);
+        res.documents.sort((a,b)=>new Date(b.$createdAt)-new Date(a.$createdAt));
+        document.getElementById("adminBody").innerHTML = res.documents.map(d => {
+            if(d.name.includes("LAB_")) return "";
+            const u = userMap[d.name] || { id:'-', phone:'-' };
+            const st = d.status || 'pending';
+            let badge = st==='completed'?'<span class="badge-completed">Tamam</span>':(st==='noshow'?'<span class="badge-noshow">GELMEDİ</span>':'<span class="badge-pending">Bekliyor</span>');
+            let btns = "";
+            const isTodayOrPast = new Date(d.date) <= new Date();
+            if (isTodayOrPast && st === 'pending') btns = `<br><button class="btn-complete" onclick="markResStatus('${d.$id}','completed','${d.name}')">✅</button><button class="btn-noshow" onclick="markResStatus('${d.$id}','noshow','${d.name}')">❌</button>`;
+            return `<tr><td>${u.id}</td><td>${d.name}<br><small>${u.phone}</small></td><td>${d.lab}<br>${d.equipment}</td><td>${formatDate(d.date)}<br>${d.time}</td><td>${badge}${btns}</td><td><button class="info-btn" onclick="showDetails('${d.$id}')">i</button><button class="edit-btn" onclick="editRes('${d.$id}','${d.lab}','${d.date}','${d.equipment}','${d.time}','${d.name}',\`${d.history||''}\`)">Düz.</button><button class="delete-btn" onclick="deleteRes('${d.$id}',true)">Sil</button></td></tr>`;
+        }).join('');
+    } catch(e) { console.error(e); }
+}
+
+async function loadUserData() {
+    try {
+        const res = await databases.listDocuments(DB_ID, COLL_APP, [Query.equal('name', currentUser.name)]);
+        res.documents.sort((a,b)=>new Date(b.$createdAt)-new Date(a.$createdAt));
+        document.getElementById("userBody").innerHTML = res.documents.map(d => `<tr><td>${d.lab}<br>${d.equipment}</td><td>${d.status==='completed'?'<span class="badge-completed">Tamam</span>':(d.status==='noshow'?'<span class="badge-noshow">GELMEDİ</span>':'Bekliyor')}</td><td>${formatDate(d.date)}<br>${d.time}</td><td><button class="info-btn" onclick="showDetails('${d.$id}')">i</button><button class="delete-btn" ${canProcess(d.date,'delete')&&d.status!=='completed'&&d.status!=='noshow'?'':'disabled'} onclick="deleteRes('${d.$id}',false)">İptal</button></td></tr>`).join('');
+    } catch(e) {}
+}
+
+async function deleteRes(id, adm) { if(confirm("Silinsin mi?")) { await databases.deleteDocument(DB_ID, COLL_APP, id); if(adm) loadAdminData(); else loadUserData(); refreshView(); } }
+async function editRes(id, l, d, e, t, o, h) { editingId=id; editingOwner=o; editingHistory=h; document.getElementById("editModeNotice").classList.remove("hidden"); document.getElementById("labSelect").value=l; document.getElementById("resDate").value=d.split('T')[0]; openUserTab('makeRes'); refreshView(); }
+
+// --- UI ---
+function switchPage(id) { document.querySelectorAll('.box > div').forEach(d=>d.classList.add('hidden')); document.getElementById(id).classList.remove('hidden'); }
+window.openUserTab = function(t) { document.getElementById('tab-makeRes').classList.add('hidden'); document.getElementById('tab-myRes').classList.add('hidden'); document.getElementById('btn-makeRes').classList.remove('active'); document.getElementById('btn-myRes').classList.remove('active'); document.getElementById('tab-'+t).classList.remove('hidden'); document.getElementById('btn-'+t).classList.add('active'); if(t==='myRes') loadUserData(); }
+window.openAdminTab = function(t) { ['list','users','equip','cal'].forEach(x=>{document.getElementById('adm-'+x).classList.add('hidden');document.getElementById('btn-adm-'+x).classList.remove('active');}); document.getElementById('adm-'+t).classList.remove('hidden'); document.getElementById('btn-adm-'+t).classList.add('active'); if(t==='list') loadAdminData(); if(t==='users') loadUserProfiles(); }
+
+// --- CALENDAR ---
+async function refreshView() {
+    const l=document.getElementById("labSelect").value, d=document.getElementById("resDate").value;
+    if(!l||!d) return;
+    const h=getHoliday(d);
+    if(!SUPER_ADMINS.includes(currentUser?.email) && h) { document.getElementById("holidayNotice").innerText="⚠️ "+h; document.getElementById("holidayNotice").classList.remove("hidden"); document.getElementById("calendarContent").classList.add("hidden"); return; }
+    document.getElementById("holidayNotice").classList.add("hidden"); document.getElementById("calendarContent").classList.remove("hidden");
+    const eqs = await databases.listDocuments(DB_ID, COLL_EQUIP, [Query.equal('lab', l)]);
+    equipmentTypeMap={}; eqs.documents.forEach(x=>equipmentTypeMap[x.name]=x.type||'short');
+    const apps = await databases.listDocuments(DB_ID, COLL_APP, [Query.equal('lab', l), Query.equal('date', d)]);
+    let html = `<tr><th>Saat</th>${eqs.documents.map(x=>`<th>${x.name}</th>`).join('')}</tr>`;
+    hours.forEach(hr => {
+        html += `<tr><td><b>${hr}</b></td>${eqs.documents.map(eq => {
+            const isL = eq.type === 'long';
+            if (isL && ["11:00-12:00","12:00-13:00","14:00-15:00","15:00-16:00"].includes(hr)) return "";
+            if (isL && ["09:00-10:00","16:00-17:00"].includes(hr)) return `<td class="slot-inactive">-</td>`;
+            const app = apps.documents.find(a => a.time.includes(hr) && a.equipment.includes(eq.name));
+            if (app) {
+                if (app.name === "LAB_KAPALI") return `<td ${isL?'rowspan=3':''} class="slot-blocked">KAPALI</td>`;
+                if (app.name === "LAB_ACIK") return `<td ${isL?'rowspan=3':''} class="slot-free" onclick="toggleSlot(this,'${eq.name}','${hr}',${isL})">AÇIK (Seç)</td>`;
+                return `<td ${isL?'rowspan=3':''} class="${app.name===currentUser.name?'slot-me':'slot-other'}">${app.name===currentUser.name?'BEN':'DOLU'}</td>`;
+            }
+            const isRes = restrictedHours.includes(hr);
+            if (isRes) return `<td ${isL?'rowspan=3':''} class="slot-blocked">KAPALI</td>`;
+            return `<td ${isL?'rowspan=3':''} class="slot-free" onclick="toggleSlot(this,'${eq.name}','${hr}',${isL})">BOŞ</td>`;
+        }).join('')}</tr>`;
+    });
+    document.getElementById("calBody").innerHTML = html;
+}
+window.toggleSlot = function(el, eq, t, isL) {
+    if(el.classList.contains('slot-selected')) { el.classList.remove('slot-selected'); el.innerText="BOŞ"; selectedCells = selectedCells.filter(s => !(s.equip===eq && s.time===t)); } 
+    else { el.classList.add('slot-selected'); el.innerText="SEÇİLDİ"; if(isL) { if(t==="10:00-11:00") ["10:00-11:00","11:00-12:00","12:00-13:00"].forEach(x=>selectedCells.push({equip:eq,time:x})); if(t==="13:00-14:00") ["13:00-14:00","14:00-15:00","15:00-16:00"].forEach(x=>selectedCells.push({equip:eq,time:x})); } else { selectedCells.push({equip:eq, time:t}); } }
+}
+window.onload = async () => { checkSession(); };
+</script>
+</body>
+</html>
