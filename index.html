@@ -236,7 +236,7 @@ async function handleRegister() {
         await account.create(ID.unique(), email, pass, name); await account.createEmailSession(email, pass); await account.updatePrefs({ phone: phone });
         // NOT: Email'i createDocument'dan çıkardık (eski v2.1.2 gibi), veritabanı ayarına gerek kalmaz.
         try { await databases.createDocument(DB_ID, COLL_PROFILES, ID.unique(), { studentId: idVal, name: name, phone: phone, blacklisted: false }); } catch(dbError) { console.error("DB Error:", dbError); }
-        await account.createVerification("https://oktaykemah.github.io/lab-randevu/"); alert("Kayıt Başarılı! Mail gönderildi."); await account.deleteSession('current'); switchPage('loginPage'); 
+        await account.createVerification("https://mmeikclab.github.io/booking/"); alert("Kayıt Başarılı! Mail gönderildi."); await account.deleteSession('current'); switchPage('loginPage'); 
     } catch (e) { alert("Hata: " + e.message); } 
 }
 async function handleLogin() { const email = document.getElementById("loginId").value.trim() + document.getElementById("loginDomain").value; try { await account.createEmailSession(email, document.getElementById("loginPass").value); location.reload(); } catch (e) { alert(e.message); } }
