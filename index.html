@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>İKÇÜ Lab Randevu - v2.1.1</title>
+  <title>İKÇÜ Lab Randevu - v2.1.2</title>
   <script src="https://cdn.jsdelivr.net/npm/appwrite@13.0.1"></script>
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -106,7 +106,7 @@
 </head>
 <body>
 
-<div class="version-tag">v2.1.1</div>
+<div class="version-tag">v2.1.2</div>
 
 <div id="app" class="box">
     <div id="loginPage" class="login-wrapper">
@@ -155,7 +155,7 @@
         
         <div class="input-group">
             <i class="fa-solid fa-building-columns"></i>
-            <select id="regDomain"><option value="@ogr.ikc.edu.tr">Öğrenci</option><option value="@ikc.edu.tr">Akademik</option></select>
+            <select id="regDomain" onchange="toggleAdvisor()"><option value="@ogr.ikc.edu.tr">Öğrenci</option><option value="@ikc.edu.tr">Akademik</option></select>
         </div>
         <div class="input-group">
             <i class="fa-solid fa-id-card"></i>
@@ -165,6 +165,14 @@
             <i class="fa-solid fa-user"></i>
             <input id="regFullName" type="text" placeholder="Ad Soyad">
         </div>
+        
+        <div class="input-group" id="advisorGroup">
+            <i class="fa-solid fa-chalkboard-user"></i>
+            <select id="regAdvisor">
+                <option value="">Danışman Seçiniz (Zorunlu)</option>
+            </select>
+        </div>
+
         <div class="input-group">
             <i class="fa-solid fa-phone"></i>
             <input id="regPhone" type="tel" placeholder="Telefon No (Örn: 05xxxxxxxxx)">
@@ -854,6 +862,34 @@ async function loadUserData() {
     }
 }
 
+// Yeni Eklenen Fonksiyonlar
+function toggleAdvisor() {
+    const domain = document.getElementById("regDomain").value;
+    const advGroup = document.getElementById("advisorGroup");
+    if (domain === "@ogr.ikc.edu.tr") {
+        advGroup.classList.remove("hidden");
+    } else {
+        advGroup.classList.add("hidden");
+    }
+}
+
+async function loadAdvisors() {
+    try {
+        const res = await databases.listDocuments(DB_ID, COLL_PROFILES, [Query.limit(100)]);
+        const select = document.getElementById("regAdvisor");
+        select.innerHTML = '<option value="">Danışman Seçiniz (Zorunlu)</option>';
+        res.documents.forEach(u => {
+            // Sadece akademik hesapların listeye eklenmesi
+            if (u.email && u.email.split('@')[1] === 'ikc.edu.tr') {
+                const opt = document.createElement("option");
+                opt.value = u.name;
+                opt.text = u.name;
+                select.appendChild(opt);
+            }
+        });
+    } catch(e) { console.log("Danışman yükleme hatası", e); }
+}
+
 async function checkSession() {
     try {
         currentUser = await account.get();
@@ -866,16 +902,37 @@ async function checkSession() {
 async function handleLogin() { const email = document.getElementById("loginId").value.trim() + document.getElementById("loginDomain").value; try { await account.createEmailSession(email, document.getElementById("loginPass").value); location.reload(); } catch (e) { alert(e.message); } }
 
 async function handleRegister() { 
-    const idVal = document.getElementById("regId").value.trim(); const email = idVal + document.getElementById("regDomain").value;
-    const pass = document.getElementById("regPass").value; const name = document.getElementById("regFullName").value; const phone = document.getElementById("regPhone").value.trim();
+    const domain = document.getElementById("regDomain").value;
+    const idVal = document.getElementById("regId").value.trim(); 
+    const email = idVal + domain;
+    const pass = document.getElementById("regPass").value; 
+    const name = document.getElementById("regFullName").value; 
+    const phone = document.getElementById("regPhone").value.trim();
+    
+    let advisor = "";
+    if (domain === "@ogr.ikc.edu.tr") {
+        advisor = document.getElementById("regAdvisor").value;
+        if (!advisor) return alert("Lütfen danışman öğretim üyesi seçiniz!");
+    }
     
     const rulesCheck = document.getElementById("regRulesCheck").checked;
     if(!rulesCheck) return alert("Lütfen kuralları okuyup kabul ettiğinizi onaylayın.");
     
     if(!phone) return alert("Telefon zorunlu!");
-    try { await account.create(ID.unique(), email, pass, name); await account.createEmailSession(email, pass); await account.updatePrefs({ phone: phone });
-        try { await databases.createDocument(DB_ID, COLL_PROFILES, ID.unique(), { studentId: idVal, name: name, phone: phone, email: email, blacklisted: false }); } catch(err) {}
-        await account.createVerification("https://mmeikclab.github.io/booking/"); alert("Mail gönderildi."); await account.deleteSession('current'); switchPage('loginPage'); 
+    try { 
+        await account.create(ID.unique(), email, pass, name); 
+        await account.createEmailSession(email, pass); 
+        await account.updatePrefs({ phone: phone });
+        
+        try { 
+            // Danışman bilgisi de veritabanına ekleniyor
+            await databases.createDocument(DB_ID, COLL_PROFILES, ID.unique(), { studentId: idVal, name: name, phone: phone, email: email, blacklisted: false, advisor: advisor }); 
+        } catch(err) {}
+        
+        await account.createVerification("https://mmeikclab.github.io/booking/"); 
+        alert("Mail gönderildi."); 
+        await account.deleteSession('current'); 
+        switchPage('loginPage'); 
     } catch (e) { alert(e.message); } 
 }
 
@@ -899,6 +956,7 @@ window.onload = async () => {
         } catch (error) { const msg = document.getElementById("verifyMessage"); msg.innerText = "❌ Hata: " + error.message; msg.classList.remove("hidden"); msg.classList.add("verify-error"); }
     }
     checkSession();
+    loadAdvisors(); // Danışmanları sayfa yüklenirken getirir
 };
 </script>
 </body>
