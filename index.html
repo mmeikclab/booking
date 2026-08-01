@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>İKÇÜ Lab Randevu - v2.1.0</title>
+  <title>İKÇÜ Lab Randevu - v2.1.1</title>
   <script src="https://cdn.jsdelivr.net/npm/appwrite@13.0.1"></script>
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -106,7 +106,7 @@
 </head>
 <body>
 
-<div class="version-tag">v2.1.0</div>
+<div class="version-tag">v2.1.1</div>
 
 <div id="app" class="box">
     <div id="loginPage" class="login-wrapper">
@@ -172,6 +172,16 @@
         <div class="input-group">
             <i class="fa-solid fa-lock"></i>
             <input id="regPass" type="password" placeholder="Şifre">
+        </div>
+
+        <div style="margin: 15px 0; text-align: left; font-size: 12px;">
+            <div style="background: #f9f9f9; padding: 10px; border: 1px solid #ddd; border-radius: 5px; height: 60px; overflow-y: auto; margin-bottom: 10px; color: #555; line-height: 1.4;">
+                BURDA KURALLAR YAZIYOR
+            </div>
+            <label style="display: flex; align-items: center; gap: 8px; font-weight: normal; cursor: pointer; margin-top: 0; color: #333;">
+                <input type="checkbox" id="regRulesCheck" style="width: auto; margin: 0;">
+                Kuralları okudum, anladım ve kabul ediyorum.
+            </label>
         </div>
 
         <button class="main-btn" onclick="handleRegister()">Kayıt Ol</button>
@@ -858,6 +868,10 @@ async function handleLogin() { const email = document.getElementById("loginId").
 async function handleRegister() { 
     const idVal = document.getElementById("regId").value.trim(); const email = idVal + document.getElementById("regDomain").value;
     const pass = document.getElementById("regPass").value; const name = document.getElementById("regFullName").value; const phone = document.getElementById("regPhone").value.trim();
+    
+    const rulesCheck = document.getElementById("regRulesCheck").checked;
+    if(!rulesCheck) return alert("Lütfen kuralları okuyup kabul ettiğinizi onaylayın.");
+    
     if(!phone) return alert("Telefon zorunlu!");
     try { await account.create(ID.unique(), email, pass, name); await account.createEmailSession(email, pass); await account.updatePrefs({ phone: phone });
         try { await databases.createDocument(DB_ID, COLL_PROFILES, ID.unique(), { studentId: idVal, name: name, phone: phone, email: email, blacklisted: false }); } catch(err) {}
