@@ -1,0 +1,1048 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>İKÇÜ Lab Randevu - v2.1.3</title>
+  <script src="https://cdn.jsdelivr.net/npm/appwrite@13.0.1"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <style>
+    :root { --primary: #0066cc; --admin: #2c3e50; --danger: #e74c3c; --success: #27ae60; --warning: #f39c12; --info: #17a2b8; --occupied-other: #fdeaea; --occupied-me: #e3f2fd; --selected: #218838; --blocked: #636e72; --pending: #ff9f43; --holiday: #fff3e0; }
+    body { font-family: 'Segoe UI', sans-serif; background: #f4f7f9; margin: 0; padding: 20px; display: flex; justify-content: center; min-height: 100vh; position: relative; align-items: center; }
+    
+    .version-tag { position: fixed; bottom: 10px; left: 10px; font-size: 11px; color: #888; z-index: 1000; font-weight: bold; background: rgba(255,255,255,0.7); padding: 2px 5px; border-radius: 4px; }
+    .box { background: #fff; padding: 30px; width: 100%; max-width: 1200px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); position: relative; z-index: 1; }
+    .hidden { display: none !important; }
+
+    h2, h3 { color: #333; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-top: 0; }
+    
+    /* GİRİŞ SAYFASI ÖZEL TASARIM */
+    .login-wrapper { max-width: 400px; margin: 0 auto; text-align: center; }
+    .login-header { margin-bottom: 25px; }
+    .login-header i { font-size: 45px; color: var(--primary); margin-bottom: 15px; display: block; }
+    .login-header h2 { font-size: 18px; border: none; margin: 0; color: #2c3e50; padding: 0; font-weight: 700; }
+    .login-header h3 { font-size: 15px; border: none; margin: 5px 0 0; color: #7f8c8d; font-weight: 400; }
+
+    /* İKONLU INPUT GRUPLARI */
+    .input-group { position: relative; margin-bottom: 12px; }
+    .input-group i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #95a5a6; z-index: 2; font-size: 14px; }
+    .input-group input, .input-group select { padding-left: 35px; width: 100%; box-sizing: border-box; }
+
+    label { font-weight: bold; font-size: 13px; display: block; margin-top: 15px; color: #555; }
+    select, input, button { width: 100%; padding: 12px; margin-top: 8px; border-radius: 8px; border: 1px solid #ddd; box-sizing: border-box; font-size: 14px; transition: 0.3s; }
+    input:focus, select:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px rgba(0,102,204,0.1); }
+    
+    /* SEKME (TABS) YAPISI */
+    .tab-nav { display: flex; border-bottom: 2px solid #eee; margin-bottom: 20px; overflow-x: auto; }
+    .tab-btn { flex: 1; padding: 15px; background: none; border: none; font-weight: bold; color: #666; cursor: pointer; border-bottom: 3px solid transparent; transition: 0.3s; font-size: 13px; margin-top: 0; border-radius: 8px 8px 0 0; white-space: nowrap; }
+    .tab-btn:hover { background: #f9f9f9; color: var(--primary); }
+    .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); background: #f0f7ff; }
+    .tab-btn i { margin-right: 8px; }
+
+    /* TAKVİM VE HÜCRELER */
+    .calendar-container { overflow-x: auto; margin-top: 20px; border: 1px solid #ddd; border-radius: 8px; }
+    .cal-table { width: 100%; border-collapse: collapse; background: white; min-width: 600px; }
+    .cal-table th, .cal-table td { border: 1px solid #eee; padding: 12px; text-align: center; font-size: 12px; transition: 0.2s; user-select: none; }
+    .cal-table th { background: #f8f9fa; color: #666; }
+    
+    .slot-free { color: var(--success); font-weight: bold; cursor: pointer; }
+    .slot-free:hover { background-color: #f0fff4; }
+    .slot-selected { background-color: var(--success) !important; color: white !important; font-weight: bold; cursor: pointer; border: 1px solid #1e7e34 !important; }
+    
+    .slot-me { background: var(--occupied-me); color: var(--primary); font-weight: bold; cursor: not-allowed; }
+    .slot-other { background: var(--occupied-other); color: var(--danger); font-weight: bold; cursor: not-allowed; }
+    .slot-inactive { background: #f2f2f2; color: #a0a0a0; font-style: italic; font-weight: bold; cursor: not-allowed; }
+    
+    /* ADMİN BLOKLAMA & BEKLEYEN DEĞİŞİKLİK */
+    .slot-blocked { background: var(--blocked); color: white; font-weight: bold; cursor: not-allowed; }
+    .slot-pending { background: var(--pending) !important; color: white !important; border: 2px dashed #e67e22 !important; cursor: pointer; }
+    .slot-admin-clickable { cursor: pointer !important; }
+    .slot-admin-clickable:hover { opacity: 0.8; }
+
+    .main-btn { background: var(--primary); color: white; border: none; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 15px; }
+    .main-btn:hover { background: #0056b3; transform: translateY(-1px); }
+    .save-envanter-btn { background: var(--success); color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; margin-top: 15px; font-weight: bold; width: 100%; }
+    .refresh-btn { background: #6c757d; color: white; border: none; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: bold; margin-top: 8px; }
+    
+    .delete-btn { background: var(--danger); color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 11px; }
+    .delete-btn:disabled { background: #e0e0e0; cursor: not-allowed; color: #999; }
+    
+    .edit-btn { background: var(--warning); color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 11px; margin-right: 3px; }
+    .edit-btn:disabled { background: #e0e0e0; cursor: not-allowed; color: #999; }
+
+    .info-btn { background: var(--info); color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 11px; margin-right: 3px; font-weight: bold; }
+    
+    /* STATUS BADGES */
+    .badge-completed { background: #d4edda; color: #155724; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; border: 1px solid #c3e6cb; }
+    .badge-noshow { background: #f8d7da; color: #721c24; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; border: 1px solid #f5c6cb; }
+    .badge-pending { background: #fff3cd; color: #856404; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; border: 1px solid #ffeeba; }
+    
+    .btn-complete { background: var(--success); color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 11px; margin-right: 3px; }
+    .btn-noshow { background: var(--danger); color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 11px; margin-right: 3px; }
+
+    table.res-table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 13px; }
+    .res-table th, .res-table td { text-align: left; padding: 10px; border-bottom: 1px solid #eee; }
+    .res-table th { background: #f8f9fa; color: #555; }
+    
+    .info-card { background: #e3f2fd; padding: 12px; border-radius: 8px; color: #0d47a1; font-size: 13px; font-weight: bold; margin-bottom: 15px; border-left: 5px solid var(--primary); line-height: 1.4; }
+    
+    /* KOTA KARTI STİLİ */
+    .quota-card { background: #fff3cd; padding: 12px; border-radius: 8px; color: #856404; font-size: 13px; font-weight: bold; margin-bottom: 15px; border-left: 5px solid #ffc107; display: flex; justify-content: space-between; align-items: center; }
+    
+    .holiday-msg { background: var(--holiday); color: #e65100; padding: 15px; border-radius: 8px; text-align: center; font-weight: bold; margin-bottom: 15px; border: 1px solid #ffe0b2; }
+    .verify-msg { padding: 15px; border-radius: 8px; text-align: center; font-weight: bold; margin-bottom: 15px; font-size: 14px; }
+    .verify-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+    .verify-error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+
+    /* MODAL */
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 9999; }
+    .modal.active { display: flex !important; }
+    .modal-content { background: white; padding: 25px; border-radius: 10px; width: 90%; max-width: 500px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); position: relative; }
+    .close-modal { position: absolute; top: 10px; right: 15px; font-size: 24px; cursor: pointer; font-weight: bold; color: #666; }
+    .log-box { background: #f8f9fa; padding: 10px; border: 1px solid #ddd; border-radius: 5px; max-height: 200px; overflow-y: auto; font-family: monospace; font-size: 11px; margin-top: 10px; white-space: pre-wrap; color: #333; }
+  </style>
+</head>
+<body>
+
+<div class="version-tag">v2.1.3</div>
+
+<div id="app" class="box">
+    <div id="loginPage" class="login-wrapper">
+        <div class="login-header">
+            <i class="fa-solid fa-flask-vial"></i>
+            <h2>İKÇÜ Metalurji ve Malzeme Mühendisliği</h2>
+            <h3>Laboratuvar Randevu Sistemi</h3>
+        </div>
+        
+        <div id="verifyMessage" class="hidden verify-msg"></div>
+
+        <div class="input-group">
+            <i class="fa-solid fa-building-columns"></i>
+            <select id="loginDomain">
+                <option value="@ogr.ikc.edu.tr">Öğrenci (@ogr.ikc.edu.tr)</option>
+                <option value="@ikc.edu.tr">Akademik (@ikc.edu.tr)</option>
+            </select>
+        </div>
+
+        <div class="input-group">
+            <i class="fa-solid fa-user-graduate"></i>
+            <input id="loginId" type="text" placeholder="Öğrenci No.">
+        </div>
+
+        <div class="input-group">
+            <i class="fa-solid fa-lock"></i>
+            <input id="loginPass" type="password" placeholder="Şifre">
+        </div>
+
+        <button class="main-btn" onclick="handleLogin()">
+            <i class="fa-solid fa-right-to-bracket"></i> Giriş Yap
+        </button>
+        
+        <div style="text-align: center; margin-top: 20px;">
+            <a href="#" onclick="switchPage('registerPage')" style="color: var(--primary); text-decoration: none; font-size: 14px;">
+                <i class="fa-solid fa-user-plus"></i> Yeni Hesap Oluştur
+            </a>
+        </div>
+    </div>
+
+    <div id="registerPage" class="hidden login-wrapper">
+        <div class="login-header">
+            <i class="fa-solid fa-user-plus" style="color:var(--success);"></i>
+            <h2>Yeni Hesap Oluştur</h2>
+        </div>
+        
+        <div class="input-group">
+            <i class="fa-solid fa-building-columns"></i>
+            <select id="regDomain" onchange="toggleAdvisor()"><option value="@ogr.ikc.edu.tr">Öğrenci</option><option value="@ikc.edu.tr">Akademik</option></select>
+        </div>
+        <div class="input-group">
+            <i class="fa-solid fa-id-card"></i>
+            <input id="regId" type="text" placeholder="ID (Örn: y240219010)">
+        </div>
+        <div class="input-group">
+            <i class="fa-solid fa-user"></i>
+            <input id="regFullName" type="text" placeholder="Ad Soyad">
+        </div>
+        
+        <div class="input-group" id="advisorGroup">
+            <i class="fa-solid fa-chalkboard-user"></i>
+            <select id="regAdvisor">
+                <option value="">Danışman Seçiniz (Zorunlu)</option>
+            </select>
+        </div>
+
+        <div class="input-group">
+            <i class="fa-solid fa-phone"></i>
+            <input id="regPhone" type="tel" placeholder="Telefon No (Örn: 05xxxxxxxxx)">
+        </div>
+        <div class="input-group">
+            <i class="fa-solid fa-lock"></i>
+            <input id="regPass" type="password" placeholder="Şifre">
+        </div>
+
+        <div style="margin: 15px 0; text-align: left; font-size: 12px;">
+            <div style="background: #f9f9f9; padding: 10px; border: 1px solid #ddd; border-radius: 5px; height: 60px; overflow-y: auto; margin-bottom: 10px; color: #555; line-height: 1.4;">
+                BURDA KURALLAR YAZIYOR
+            </div>
+            <label style="display: flex; align-items: center; gap: 8px; font-weight: normal; cursor: pointer; margin-top: 0; color: #333;">
+                <input type="checkbox" id="regRulesCheck" style="width: auto; margin: 0;">
+                Kuralları okudum, anladım ve kabul ediyorum.
+            </label>
+        </div>
+
+        <button class="main-btn" onclick="handleRegister()">Kayıt Ol</button>
+        <button onclick="switchPage('loginPage')" style="background:none; border:none; color:#666; cursor:pointer; margin-top:10px;">
+            <i class="fa-solid fa-arrow-left"></i> Geri Dön
+        </button>
+    </div>
+
+    <div id="bookingPage" class="hidden">
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #eee; padding-bottom:15px; margin-bottom:20px;">
+            <h2 id="userGreet" style="border:none; margin:0;">Hoş Geldiniz</h2>
+            <div id="adminLink" class="hidden"><button onclick="switchPage('adminPage')" style="background: var(--admin); color: white; padding: 10px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold;"><i class="fa-solid fa-shield-halved"></i> Admin Paneli</button></div>
+        </div>
+
+        <div class="tab-nav">
+            <button id="btn-makeRes" class="tab-btn active" onclick="openUserTab('makeRes')"><i class="fa-regular fa-calendar-plus"></i> Randevu Al</button>
+            <button id="btn-myRes" class="tab-btn" onclick="openUserTab('myRes')"><i class="fa-solid fa-list-check"></i> Randevularım</button>
+            <button id="btn-myStudents" class="tab-btn hidden" onclick="openUserTab('myStudents')"><i class="fa-solid fa-users-gear"></i> Öğrencilerim</button>
+        </div>
+        
+        <div id="tab-makeRes" class="tab-content">
+            <div id="quotaDisplay" class="quota-card hidden">
+                <span>Yükleniyor...</span>
+            </div>
+
+            <div id="editModeNotice" class="hidden" style="background: #fff3cd; color: #856404; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-weight: bold; border: 1px solid #ffeeba;">⚠️ Randevu Düzenleme Modundasınız.</div>
+            <div id="labInfoCard" class="info-card hidden"></div>
+
+            <div style="background: #eef6ff; padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+                <label><i class="fa-solid fa-filter"></i> 1. Laboratuvar ve Tarih Seçimi</label>
+                <div style="display:flex; gap:10px;">
+                    <select id="labSelect" onchange="refreshView()" style="flex:2;">
+                        <option value="">Seçiniz...</option>
+                        <option value="Malzeme Karakterizasyon Lab.">Malzeme Karakterizasyon Lab.</option>
+                        <option value="Numune Hazırlama Lab.">Numune Hazırlama Lab.</option>
+                        <option value="Üretim Lab.">Üretim Lab.</option>
+                    </select>
+                    <input id="resDate" type="date" onchange="refreshView()" style="flex:1;">
+                </div>
+            </div>
+
+            <div id="statusSection" class="hidden">
+                <div id="holidayNotice" class="holiday-msg hidden"></div>
+                <div id="calendarContent">
+                    <h3><i class="fa-regular fa-calendar-days"></i> Randevu Tablosu</h3>
+                    <p style="font-size:12px; color:#666;">* Randevu almak için tablodaki <b>BOŞ</b> kutucuklara tıklayarak (yeşil) seçiniz.</p>
+                    <div class="calendar-container"><table class="cal-table"><thead id="calHead"></thead><tbody id="calBody"></tbody></table></div>
+                    <button class="main-btn" onclick="saveBooking()"><i class="fa-solid fa-check"></i> Seçili Randevuyu Kaydet</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-myRes" class="tab-content hidden">
+            <h3><i class="fa-solid fa-list-check"></i> Mevcut Randevularınız</h3>
+            <table class="res-table"><thead><tr><th>Lab / Cihaz</th><th>Durum</th><th>Zaman</th><th>İşlem</th></tr></thead><tbody id="userBody"></tbody></table>
+        </div>
+
+        <div id="tab-myStudents" class="tab-content hidden">
+            <h3><i class="fa-solid fa-hourglass-half"></i> Bekleyen Öğrenciler</h3>
+            <table class="res-table">
+                <thead><tr><th>Öğrenci No</th><th>Ad Soyad</th><th>Mail / Telefon</th><th>İşlem</th></tr></thead>
+                <tbody id="pendingStudentsBody"></tbody>
+            </table>
+            
+            <h3 style="margin-top:30px;"><i class="fa-solid fa-user-check"></i> Aktif Öğrenciler</h3>
+            <table class="res-table">
+                <thead><tr><th>Öğrenci No</th><th>Ad Soyad</th><th>Mail / Telefon</th><th>Durum</th></tr></thead>
+                <tbody id="activeStudentsBody"></tbody>
+            </table>
+        </div>
+
+        <button onclick="logout()" style="background:#666; color:white; margin-top:20px; width:auto; padding:10px 20px;"><i class="fa-solid fa-right-from-bracket"></i> Çıkış Yap</button>
+    </div>
+
+    <div id="adminPage" class="hidden admin-mode">
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #eee; padding-bottom:15px; margin-bottom:20px;">
+            <h2 style="border:none; margin:0; color:var(--admin);"><i class="fa-solid fa-user-shield"></i> Süper Admin Paneli</h2>
+            <button onclick="switchPage('bookingPage')" style="background: var(--primary); color: white; border: none; padding: 10px; border-radius: 8px; cursor: pointer;"><i class="fa-solid fa-arrow-left"></i> Panele Dön</button>
+        </div>
+        
+        <div class="tab-nav">
+            <button id="btn-adm-list" class="tab-btn active" onclick="openAdminTab('list')"><i class="fa-solid fa-list"></i> Tüm Randevular</button>
+            <button id="btn-adm-users" class="tab-btn" onclick="openAdminTab('users')"><i class="fa-solid fa-users"></i> Kullanıcılar</button>
+            <button id="btn-adm-equip" class="tab-btn" onclick="openAdminTab('equip')"><i class="fa-solid fa-screwdriver-wrench"></i> Envanter</button>
+            <button id="btn-adm-cal" class="tab-btn" onclick="openAdminTab('cal')"><i class="fa-regular fa-clock"></i> Doluluk/Saatler</button>
+        </div>
+
+        <div id="adm-list" class="tab-content">
+            <h3><i class="fa-solid fa-list"></i> Tüm Randevular Listesi</h3>
+            <table class="res-table">
+                <thead><tr><th>ID</th><th>Kullanıcı</th><th>Lab / Cihaz</th><th>Zaman</th><th>Durum</th><th>İşlem</th></tr></thead>
+                <tbody id="adminBody"></tbody>
+            </table>
+        </div>
+
+        <div id="adm-users" class="tab-content hidden">
+            <div style="background: #fdfdfd; padding: 20px; border-radius: 10px; border: 1px solid #ddd;">
+                <h3><i class="fa-solid fa-users"></i> Kayıtlı Kullanıcı Havuzu</h3>
+                <div style="max-height: 400px; overflow-y: auto;">
+                    <table class="res-table" style="margin-top:0;">
+                        <thead style="background:#f9f9f9; position: sticky; top: 0;"><tr><th>ID</th><th>Ad Soyad</th><th>Telefon</th><th>Durum</th><th>İşlem</th></tr></thead>
+                        <tbody id="userProfilesBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="adm-equip" class="tab-content hidden">
+            <div style="background: #fdfdfd; padding: 20px; border-radius: 10px; border: 1px solid #ddd;">
+                <h3><i class="fa-solid fa-screwdriver-wrench"></i> Envanter & Cihaz Yönetimi</h3>
+                <div style="display:flex; gap:10px; margin-bottom: 15px;">
+                    <select id="adminLabSelect" onchange="listAdminEquipments()" style="flex:1;"><option value="Malzeme Karakterizasyon Lab.">Karakterizasyon</option><option value="Numune Hazırlama Lab.">Numune Hazırlama</option><option value="Üretim Lab.">Üretim</option></select>
+                    <input id="newEquipName" type="text" placeholder="Cihaz Adı" style="flex:1.5;">
+                    <select id="newEquipType" style="flex:1;">
+                        <option value="short">Kısa Süreli (Saatlik)</option>
+                        <option value="long">Uzun Süreli (Blok)</option>
+                    </select>
+                    <button onclick="addEquipmentToDB()" style="flex:0.5; background:var(--primary); color:white; border:none; cursor:pointer;">Ekle</button>
+                </div>
+                <div id="adminEquipList"></div>
+                <button id="saveEnvanterBtn" class="save-envanter-btn hidden" onclick="saveEnvanterChanges()">Envanter Değişikliklerini Kaydet</button>
+            </div>
+        </div>
+        
+        <div id="adm-cal" class="tab-content hidden">
+            <div style="background: #f0f4f8; padding: 15px; border-radius: 10px; border: 1px solid #d1d9e0;">
+                <h3><i class="fa-regular fa-clock"></i> Doluluk İzleme & Saat Yönetimi</h3>
+                <p style="font-size:11px; color:#666;">* Admin: Boş/Açık hücreleri kapatabilir, kapalı hücreleri açabilirsiniz. Değişiklikler <b>turuncu</b> görünür.</p>
+                <div style="display:flex; gap:10px; align-items: center;">
+                    <select id="adminViewLab" onchange="loadAdminCalendar()" style="flex:2;"><option value="Malzeme Karakterizasyon Lab.">Malzeme Karakterizasyon Lab.</option><option value="Numune Hazırlama Lab.">Numune Hazırlama Lab.</option><option value="Üretim Lab.">Üretim Lab.</option></select>
+                    <input id="adminViewDate" type="date" onchange="loadAdminCalendar()" style="flex:1;">
+                    <button onclick="refreshAdminTable()" class="refresh-btn" style="flex:0.5;">🔄 Yenile</button>
+                </div>
+                <div class="calendar-container"><table class="cal-table"><thead id="adminCalHead"></thead><tbody id="adminCalBody"></tbody></table></div>
+                <button id="saveAdminCalBtn" class="save-envanter-btn hidden" onclick="saveAdminCalendarChanges()">Tablo Değişikliklerini Kaydet</button>
+            </div>
+        </div>
+        
+        <button onclick="logout()" style="background:#666; color:white; margin-top:20px; width:auto; padding:10px 20px;"><i class="fa-solid fa-right-from-bracket"></i> Güvenli Çıkış</button>
+    </div>
+
+    <div id="detailModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModal()">×</span>
+            <h3 style="margin-top:0;">Randevu Detayları</h3>
+            <div id="modalDetails" style="font-size:13px; line-height:1.6;"></div>
+            <h4 style="margin-bottom:5px; margin-top:15px;">İşlem Geçmişi (Log)</h4>
+            <div id="modalLogs" class="log-box"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+const { Client, Account, Databases, ID, Query } = Appwrite;
+const client = new Client().setEndpoint('https://cloud.appwrite.io/v1').setProject('6981c32f00212fb21625');
+const account = new Account(client);
+const databases = new Databases(client);
+
+// EMAILJS
+const EMAILJS_SERVICE_ID = "service_bnjn6pj"; 
+const EMAILJS_PUBLIC_KEY = "GoSBRo0EMVNlIyZSK";
+const EMAILJS_TEMPLATE_ID = "template_mifux1n"; 
+
+(function(){ emailjs.init(EMAILJS_PUBLIC_KEY); })();
+
+const DB_ID = '6981c42a00202c6cdf0e', COLL_APP = 'appointments', COLL_EQUIP = 'equipments', COLL_PROFILES = 'profiles';
+const SUPER_ADMINS = ["oktay.kemah@ikc.edu.tr", "saadet.guler@ikc.edu.tr", "metehan.atagur@ikc.edu.tr", "berk.ozler@ikc.edu.tr"];
+const LAB_BOSSES = { "Numune Hazırlama Lab.": "Arş. Gör. Oktay Kemah", "Malzeme Karakterizasyon Lab.": "Öğr. Gör. Dr. Saadet Güler", "Üretim Lab.": "Arş.Gör.Dr. Metehan Atagür - Arş.Gör. Berk Özler" };
+const LAB_EMAILS = { "Numune Hazırlama Lab.": ["oktay.kemah@ikc.edu.tr"], "Malzeme Karakterizasyon Lab.": ["saadet.guler@ikc.edu.tr"], "Üretim Lab.": ["metehan.atagur@ikc.edu.tr", "berk.ozler@ikc.edu.tr"] };
+
+const hours = ["09:00-10:00", "10:00-11:00", "11:00-12:00", "12:00-13:00", "13:00-14:00", "14:00-15:00", "15:00-16:00", "16:00-17:00"];
+const restrictedHours = ["09:00-10:00", "16:00-17:00"]; 
+
+let currentUser = null, editingId = null, editingOwner = null, editingHistory = "";
+let appointmentsMap = {}, userMap = {}, equipmentTypeMap = {}; 
+let selectedCells = [], tempAdminChanges = []; 
+
+// KOTA LİMİTLERİ
+const LIMIT_SHORT_HOURS = 15;
+const LIMIT_LONG_BLOCKS = 3;
+
+function getWeekNumber(d) {
+    d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay()||7));
+    var yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
+    var weekNo = Math.ceil(( ( (d - yearStart) / 86400000) + 1)/7);
+    return [d.getUTCFullYear(), weekNo];
+}
+
+// KOTA SORGULAMA (DÜZELTİLDİ: Saat Bazlı Blok Hesabı)
+async function checkUserQuota(targetDate) {
+    if(SUPER_ADMINS.includes(currentUser.email)) return { short: 0, long: 0, ok: true };
+
+    const targetWeek = getWeekNumber(new Date(targetDate));
+    const res = await databases.listDocuments(DB_ID, COLL_APP, [Query.equal('name', currentUser.name), Query.limit(100)]);
+    
+    let usedShort = 0;
+    let usedLongBlocks = 0;
+
+    for(let doc of res.documents) {
+        if(editingId && doc.$id === editingId) continue; 
+
+        const docWeek = getWeekNumber(new Date(doc.date));
+        if (docWeek[0] === targetWeek[0] && docWeek[1] === targetWeek[1]) {
+            const type = equipmentTypeMap[doc.equipment] || 'short';
+            const duration = doc.time.split(', ').length;
+            
+            if (type === 'long') {
+                usedLongBlocks += Math.floor(duration / 3) || 1; // En az 1 say
+            } else {
+                usedShort += duration;
+            }
+        }
+    }
+    return { short: usedShort, long: usedLongBlocks, ok: true };
+}
+
+async function updateQuotaDisplay(dateVal) {
+    const d = dateVal ? new Date(dateVal) : new Date();
+    if(Object.keys(equipmentTypeMap).length === 0) return;
+
+    const stats = await checkUserQuota(d);
+    const div = document.getElementById("quotaDisplay");
+    
+    if(SUPER_ADMINS.includes(currentUser?.email)) {
+        div.classList.add("hidden"); return;
+    }
+    
+    div.classList.remove("hidden");
+    div.innerHTML = `
+        <span>📊 Haftalık Kotanız (${getWeekNumber(d)[1]}. Hafta):</span>
+        <span style="color: ${stats.short >= LIMIT_SHORT_HOURS ? 'red' : 'green'}">Kısa: ${stats.short}/${LIMIT_SHORT_HOURS} Saat</span>
+        <span style="color: ${stats.long >= LIMIT_LONG_BLOCKS ? 'red' : 'green'}">Uzun: ${stats.long}/${LIMIT_LONG_BLOCKS} Blok</span>
+    `;
+}
+
+function sendEmail(toEmails, subject, messageBody) {
+    const targets = Array.isArray(toEmails) ? toEmails : [toEmails];
+    targets.forEach(email => {
+        if(!email || email === "Bilinmiyor") return;
+        emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, { to_email: email, subject: subject, message: messageBody })
+        .then(function() { console.log('Mail gönderildi:', email); }, function(error) { console.error('Mail hatası:', error); });
+    });
+}
+
+function getHoliday(dateStr) {
+    const d = new Date(dateStr), day = d.getDay(), monthDay = (d.getMonth() + 1) + "-" + d.getDate();
+    if (day === 0 || day === 6) return "Hafta Sonu (Laboratuvar Kapalı)";
+    const h = {"1-1":"Yılbaşı","4-23":"23 Nisan","5-1":"1 Mayıs","5-19":"19 Mayıs","7-15":"15 Temmuz","8-30":"30 Ağustos","10-29":"29 Ekim"};
+    const r2026 = {"3-19":"Bayram Arifesi","3-20":"Ramazan Bayramı","3-21":"Ramazan Bayramı","3-22":"Ramazan Bayramı","5-26":"Bayram Arifesi","5-27":"Kurban Bayramı","5-28":"Kurban Bayramı","5-29":"Kurban Bayramı","5-30":"Kurban Bayramı"};
+    return h[monthDay] || r2026[monthDay] || null;
+}
+
+function canProcess(dateStr, type) {
+    if (SUPER_ADMINS.includes(currentUser?.email)) return true;
+    const targetDate = new Date(dateStr); targetDate.setHours(0, 0, 0, 0); 
+    const today = new Date(); today.setHours(0, 0, 0, 0); 
+    if (type === 'booking') return targetDate > today;
+    const diffTime = targetDate - today; const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    if (type === 'delete') return diffDays >= 1; 
+    if (type === 'edit') return diffDays >= 2; 
+    return false;
+}
+
+async function loadUserProfiles() {
+    try {
+        const res = await databases.listDocuments(DB_ID, COLL_PROFILES, [Query.orderAsc('studentId')]);
+        // USER MANAGEMENT TABLOSU (ADMIN)
+        document.getElementById("userProfilesBody").innerHTML = res.documents.map(u => {
+            const isBlacklisted = u.blacklisted || false;
+            return `<tr>
+                <td style="font-weight:bold;">${u.studentId}</td>
+                <td>${u.name}</td>
+                <td>${u.phone}</td>
+                <td><span class="${isBlacklisted ? 'badge-noshow' : 'badge-completed'}">${isBlacklisted ? 'KARA LİSTE' : 'Aktif'}</span></td>
+                <td><button onclick="toggleBlacklist('${u.$id}', ${isBlacklisted})" style="background:${isBlacklisted ? 'var(--success)' : '#444'}; color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer; font-size:11px;">${isBlacklisted ? 'Affet (Aç)' : 'Banla'} </button></td>
+            </tr>`;
+        }).join('');
+        
+        res.documents.forEach(u => { userMap[u.name] = { id: u.studentId, phone: u.phone, email: u.email || "Bilinmiyor" }; });
+    } catch (e) { console.error("Profil Yükleme Hatası", e); }
+}
+
+async function toggleBlacklist(docId, currentStatus) {
+    if(!confirm(currentStatus ? "Kullanıcının banı kaldırılsın mı?" : "Kullanıcı KARA LİSTEYE alınsın mı?")) return;
+    try {
+        await databases.updateDocument(DB_ID, COLL_PROFILES, docId, { blacklisted: !currentStatus });
+        alert("Kullanıcı durumu güncellendi.");
+        loadUserProfiles();
+    } catch(e) { alert("Hata: " + e.message); }
+}
+
+async function listAdminEquipments() {
+    const lab = document.getElementById("adminLabSelect").value;
+    const res = await databases.listDocuments(DB_ID, COLL_EQUIP, [Query.equal('lab', lab)]);
+    const listDiv = document.getElementById("adminEquipList"), saveBtn = document.getElementById("saveEnvanterBtn");
+    saveBtn.classList.toggle("hidden", res.total === 0);
+    listDiv.innerHTML = res.documents.map(d => `
+        <div class="equip-row" data-id="${d.$id}" style="display:flex; justify-content:space-between; align-items:center; padding:10px; border-bottom:1px solid #eee;">
+            <span style="font-size:13px; font-weight:bold;">${d.name}</span>
+            <div style="display:flex; gap:5px;">
+                <select class="type-select" style="padding:5px; font-size:11px; width:auto; border:1px solid #ccc;">
+                    <option value="short" ${d.type !== 'long' ? 'selected' : ''}>Kısa (Saatlik)</option>
+                    <option value="long" ${d.type === 'long' ? 'selected' : ''}>Uzun (Blok)</option>
+                </select>
+                <select class="status-select" style="padding:5px; font-size:11px; width:auto;">
+                    <option value="Kullanılabilir" ${d.status === 'Kullanılabilir' ? 'selected' : ''}>Kullanılabilir</option>
+                    <option value="Bakımda" ${d.status === 'Bakımda' ? 'selected' : ''}>Bakımda</option>
+                    <option value="Kullanım Dışı" ${d.status === 'Kullanım Dışı' ? 'selected' : ''}>Kullanım Dışı</option>
+                </select>
+                <button onclick="deleteDevice('${d.$id}')" style="background:var(--danger); color:white; border:none; border-radius:4px; padding:5px 12px; cursor:pointer; font-size:11px;">Sil</button>
+            </div>
+        </div>`).join('');
+}
+
+async function saveEnvanterChanges() {
+    const rows = document.querySelectorAll('.equip-row'), btn = document.getElementById("saveEnvanterBtn");
+    btn.innerText = "Kaydediliyor..."; btn.disabled = true;
+    try {
+        for (let row of rows) {
+            const id = row.getAttribute('data-id'), newStatus = row.querySelector('.status-select').value, newType = row.querySelector('.type-select').value;
+            await databases.updateDocument(DB_ID, COLL_EQUIP, id, { status: newStatus, type: newType });
+        }
+        alert("Envanter güncellendi.");
+    } catch (e) { alert("Hata: " + e.message); }
+    finally { btn.innerText = "Envanter Değişikliklerini Kaydet"; btn.disabled = false; listAdminEquipments(); }
+}
+
+async function addEquipmentToDB() {
+    const lab = document.getElementById("adminLabSelect").value, name = document.getElementById("newEquipName").value.trim(), type = document.getElementById("newEquipType").value;
+    if(name) { await databases.createDocument(DB_ID, COLL_EQUIP, ID.unique(), { name, lab, status: 'Kullanılabilir', type: type }); document.getElementById("newEquipName").value = ""; listAdminEquipments(); }
+}
+async function deleteDevice(id) { if(confirm("Emin misiniz?")) { await databases.deleteDocument(DB_ID, COLL_EQUIP, id); listAdminEquipments(); } }
+
+window.toggleSlot = function(cell, equipName, timeSlot, isLongTerm) {
+    if (cell.classList.contains('slot-occupied') || cell.classList.contains('slot-inactive') || cell.classList.contains('slot-me') || cell.classList.contains('slot-other') || cell.classList.contains('slot-blocked')) return;
+    let slotsToAdd = [];
+    if(isLongTerm) {
+        if(timeSlot === "10:00-11:00") slotsToAdd = ["10:00-11:00", "11:00-12:00", "12:00-13:00"];
+        else if(timeSlot === "13:00-14:00") slotsToAdd = ["13:00-14:00", "14:00-15:00", "15:00-16:00"];
+        else return;
+    } else { slotsToAdd = [timeSlot]; }
+    const firstIndex = selectedCells.findIndex(s => s.equip === equipName && s.time === slotsToAdd[0]);
+    if (firstIndex > -1) {
+        slotsToAdd.forEach(t => { const idx = selectedCells.findIndex(s => s.equip === equipName && s.time === t); if(idx > -1) selectedCells.splice(idx, 1); });
+        cell.classList.remove('slot-selected'); cell.innerText = isLongTerm ? (timeSlot === "10:00-11:00" ? "10:00-13:00" : "13:00-16:00") : "BOŞ";
+    } else {
+        slotsToAdd.forEach(t => selectedCells.push({ equip: equipName, time: t })); cell.classList.add('slot-selected'); cell.innerText = "SEÇİLDİ";
+    }
+}
+
+window.toggleAdminBlock = function(cell, lab, date, equip, time, docId, isRestrictedDefault) {
+    const changeId = `${equip}-${time}`; const existingIndex = tempAdminChanges.findIndex(c => c.id === changeId); let actionType; 
+    if (docId) { 
+        actionType = 'unblock'; if (cell.classList.contains('slot-pending')) { cell.classList.remove('slot-pending'); cell.innerText = isRestrictedDefault ? "AÇIK" : "KAPALI"; if(existingIndex > -1) tempAdminChanges.splice(existingIndex, 1); return; }
+        cell.classList.add('slot-pending'); cell.innerText = "KAPATILACAK"; 
+    } else {
+        actionType = isRestrictedDefault ? 'unblock' : 'block'; if (cell.classList.contains('slot-pending')) { cell.classList.remove('slot-pending'); cell.innerText = isRestrictedDefault ? "KAPALI" : "BOŞ"; if(existingIndex > -1) tempAdminChanges.splice(existingIndex, 1); return; }
+        cell.classList.add('slot-pending'); cell.innerText = actionType === 'block' ? "KAPATILACAK" : "AÇILACAK";
+    }
+    if(existingIndex === -1) tempAdminChanges.push({ id: changeId, lab, date, equip, time, docId, isRestrictedDefault });
+    if(tempAdminChanges.length > 0) document.getElementById("saveAdminCalBtn").classList.remove("hidden"); else document.getElementById("saveAdminCalBtn").classList.add("hidden");
+}
+
+window.refreshAdminTable = function() { tempAdminChanges = []; loadAdminCalendar(); document.getElementById("saveAdminCalBtn").classList.add("hidden"); }
+
+async function saveAdminCalendarChanges() {
+    if(tempAdminChanges.length === 0) return;
+    const btn = document.getElementById("saveAdminCalBtn"); btn.innerText = "Kaydediliyor..."; btn.disabled = true;
+    try {
+        for(let change of tempAdminChanges) {
+            if (change.docId) { try { await databases.deleteDocument(DB_ID, COLL_APP, change.docId); } catch(e){} } 
+            else { await databases.createDocument(DB_ID, COLL_APP, ID.unique(), { name: change.isRestrictedDefault ? "LAB_ACIK" : "LAB_KAPALI", lab: change.lab, date: change.date, equipment: change.equip, time: change.time, history: `${change.isRestrictedDefault ? "Açıldı" : "Kapatıldı"} işlemi: ${currentUser.name}` }); }
+        }
+        alert("Tablo güncellendi."); tempAdminChanges = []; loadAdminCalendar();
+    } catch(e) { alert("Hata: " + e.message); }
+    finally { btn.innerText = "Tablo Değişikliklerini Kaydet"; btn.disabled = false; }
+}
+
+async function refreshView() {
+    const lab = document.getElementById("labSelect").value, dateStr = document.getElementById("resDate").value;
+    if(!lab || !dateStr) return;
+    document.getElementById("labInfoCard").innerText = `Sorumlu: ${LAB_BOSSES[lab]}`;
+    document.getElementById("labInfoCard").classList.remove("hidden");
+    document.getElementById("statusSection").classList.remove("hidden");
+    const holiday = getHoliday(dateStr), notice = document.getElementById("holidayNotice"), content = document.getElementById("calendarContent");
+    if(!SUPER_ADMINS.includes(currentUser?.email)) {
+        if(holiday) { notice.innerText = `⚠️ ${holiday}`; notice.classList.remove("hidden"); content.classList.add("hidden"); return; }
+        if(!canProcess(dateStr, 'booking')) { notice.innerText = `⚠️ Aynı gün randevu alınamaz.`; notice.classList.remove("hidden"); content.classList.add("hidden"); return; }
+    }
+    notice.classList.add("hidden"); content.classList.remove("hidden");
+    if (!editingId) selectedCells = [];
+    
+    const allEquips = await databases.listDocuments(DB_ID, COLL_EQUIP, [Query.equal('lab', lab)]);
+    equipmentTypeMap = {}; 
+    allEquips.documents.forEach(d => { equipmentTypeMap[d.name] = d.type || 'short'; });
+
+    updateQuotaDisplay(dateStr);
+    await renderCalendar(lab, dateStr, "calHead", "calBody", false, allEquips.documents);
+}
+
+async function renderCalendar(lab, date, headId, bodyId, isAdminView, devices) {
+    const apps = await databases.listDocuments(DB_ID, COLL_APP, [Query.equal('lab', lab), Query.equal('date', date)]);
+    document.getElementById(headId).innerHTML = `<tr><th>Saat</th>${devices.map(d => `<th>${d.name} ${d.type === 'long' ? '<br>(Uzun)' : ''}</th>`).join('')}</tr>`;
+    document.getElementById(bodyId).innerHTML = hours.map(h => {
+        const row = devices.map(d => {
+            const isLong = d.type === 'long';
+            if(isLong) {
+                if (["11:00-12:00", "12:00-13:00", "14:00-15:00", "15:00-16:00"].includes(h)) return ""; 
+                if (["09:00-10:00", "16:00-17:00"].includes(h)) return `<td class="slot-inactive" style="background:#eee;">-</td>`;
+            }
+            if(d.status && d.status !== 'Kullanılabilir') return isLong ? `<td rowspan="3" class="slot-inactive">${d.status}</td>` : `<td class="slot-inactive">${d.status === 'Bakımda' ? 'BAKIM' : 'K.DIŞI'}</td>`;
+            
+            const isRestricted = restrictedHours.includes(h);
+            const openDoc = apps.documents.find(a => a.time.includes(h) && a.equipment.includes(d.name) && a.name === "LAB_ACIK");
+            const closeDoc = apps.documents.find(a => a.time.includes(h) && a.equipment.includes(d.name) && a.name === "LAB_KAPALI");
+            const m = apps.documents.find(a => a.time.includes(h) && a.equipment.includes(d.name) && a.name !== "LAB_ACIK" && a.name !== "LAB_KAPALI");
+
+            let cellClass = "slot-free", cellText = isLong ? (h === "10:00-11:00" ? "10:00-13:00" : "13:00-16:00") : "BOŞ", onClick = `toggleSlot(this, '${d.name}', '${h}', ${isLong})`, rowSpanAttr = isLong ? 'rowspan="3"' : '';
+
+            if (m) {
+                if (editingId && m && m.$id === editingId) { const isSelected = selectedCells.find(s => s.equip === d.name && s.time === h); cellClass = isSelected ? "slot-selected" : "slot-free"; cellText = isSelected ? "SEÇİLDİ" : cellText; } 
+                else { cellClass = (isAdminView || SUPER_ADMINS.includes(currentUser.email)) ? "slot-occupied" : (m.name === currentUser.name ? "slot-me" : "slot-other"); cellText = (isAdminView || SUPER_ADMINS.includes(currentUser.email)) ? m.name : (m.name === currentUser.name ? "BEN" : "DOLU"); onClick = ""; }
+                return `<td ${rowSpanAttr} class="${cellClass}" ${onClick ? `onclick="${onClick}"` : ''}>${cellText}</td>`;
+            }
+            if (isAdminView) {
+                if (isRestricted) { if (openDoc) { cellClass = "slot-free slot-admin-clickable"; cellText = "AÇIK"; onClick = `toggleAdminBlock(this, '${lab}', '${date}', '${d.name}', '${h}', '${openDoc.$id}', true)`; } else { cellClass = "slot-blocked slot-admin-clickable"; cellText = "KAPALI"; onClick = `toggleAdminBlock(this, '${lab}', '${date}', '${d.name}', '${h}', null, true)`; } } 
+                else { if (closeDoc) { cellClass = "slot-blocked slot-admin-clickable"; cellText = "KAPALI"; onClick = `toggleAdminBlock(this, '${lab}', '${date}', '${d.name}', '${h}', '${closeDoc.$id}', false)`; } else { cellClass = "slot-free slot-admin-clickable"; cellText = "BOŞ"; onClick = `toggleAdminBlock(this, '${lab}', '${date}', '${d.name}', '${h}', null, false)`; } }
+                return `<td ${rowSpanAttr} class="${cellClass}" onclick="${onClick}">${cellText}</td>`;
+            }
+            if (isRestricted && !openDoc) return `<td ${rowSpanAttr} class="slot-blocked">KAPALI</td>`;
+            if (closeDoc) return `<td ${rowSpanAttr} class="slot-blocked">KAPALI</td>`;
+            const isSelected = selectedCells.find(s => s.equip === d.name && s.time === h);
+            if(isSelected) { cellClass = "slot-selected"; cellText = "SEÇİLDİ"; }
+            return `<td ${rowSpanAttr} class="${cellClass}" onclick="${onClick}">${cellText}</td>`;
+        }).join('');
+        return `<tr><td><b>${h}</b></td>${row}</tr>`;
+    }).join('');
+}
+
+// KAYIT İŞLEMİ (DÜZELTİLDİ: Kayıt Algoritması + Kota Kontrolü + BLACKLIST KONTROLÜ)
+async function saveBooking() {
+    // 0. KARA LİSTE KONTROLÜ
+    try {
+        const userProfile = await databases.listDocuments(DB_ID, COLL_PROFILES, [Query.equal('email', currentUser.email)]);
+        if (userProfile.documents.length > 0 && userProfile.documents[0].blacklisted === true) {
+            return alert("🚫 Daha önceki randevunuza gelmediğiniz için randevu alamazsınız. Lab sorumlusu ile iletişime geçiniz.");
+        }
+    } catch(e) { console.log("Profil kontrol hatası (Önemli değil):", e); }
+
+    const lab = document.getElementById("labSelect").value, date = document.getElementById("resDate").value;
+    if (selectedCells.length === 0) return alert("Lütfen tablodan seçim yapınız!");
+
+    // 1. KOTA HESABI
+    let proposedShort = 0;
+    let proposedLong = 0;
+    const uniqueEquipsCheck = [...new Set(selectedCells.map(s => s.equip))];
+    
+    uniqueEquipsCheck.forEach(eq => {
+        const type = equipmentTypeMap[eq] || 'short';
+        if (type === 'long') {
+            const totalHours = selectedCells.filter(s => s.equip === eq).length;
+            proposedLong += Math.floor(totalHours / 3);
+        }
+        else {
+            const count = selectedCells.filter(s => s.equip === eq).length;
+            proposedShort += count;
+        }
+    });
+
+    const currentStats = await checkUserQuota(date);
+    if ((currentStats.short + proposedShort) > LIMIT_SHORT_HOURS) return alert(`⚠️ Kısa süreli cihaz kullanım kotanız doldu! (Haftalık Max: ${LIMIT_SHORT_HOURS} Saat)`);
+    if ((currentStats.long + proposedLong) > LIMIT_LONG_BLOCKS) return alert(`⚠️ Uzun süreli cihaz kullanım kotanız doldu! (Haftalık Max: ${LIMIT_LONG_BLOCKS} Blok)`);
+
+    // 2. ÇAKIŞMA KONTROLÜ
+    const res = await databases.listDocuments(DB_ID, COLL_APP, [Query.equal('date', date), Query.equal('lab', lab)]);
+    for (let cell of selectedCells) { const conflict = res.documents.find(doc => doc.$id !== editingId && doc.equipment.includes(cell.equip) && doc.time.includes(cell.time) && doc.name !== "LAB_ACIK"); if(conflict) return alert(`Hata: ${cell.equip} cihazı ${cell.time} saatinde dolu!`); }
+    
+    let finalOwner = currentUser.name, logEntry = `Oluşturuldu: ${currentUser.name} - ${new Date().toLocaleString()}\n`, isEditAction = false;
+    if(editingId) { isEditAction = true; await databases.deleteDocument(DB_ID, COLL_APP, editingId); finalOwner = editingOwner; const editor = currentUser.name; logEntry = editingHistory + `Düzenlendi: ${editor} tarafından - ${new Date().toLocaleString()}\n`; document.getElementById("editModeNotice").classList.add("hidden"); }
+
+    const uniqueEquips = [...new Set(selectedCells.map(s => s.equip))];
+    try {
+        for (let eq of uniqueEquips) {
+            const type = equipmentTypeMap[eq] || 'short';
+            const times = selectedCells.filter(s => s.equip === eq).map(s => s.time);
+
+            if (type === 'long') {
+                const morningParams = ["10:00-11:00", "11:00-12:00", "12:00-13:00"];
+                const afternoonParams = ["13:00-14:00", "14:00-15:00", "15:00-16:00"];
+                const hasMorning = morningParams.every(h => times.includes(h));
+                const hasAfternoon = afternoonParams.every(h => times.includes(h));
+
+                if(hasMorning) { await databases.createDocument(DB_ID, COLL_APP, ID.unique(), { name: finalOwner, lab, date, equipment: eq, time: morningParams.join(', '), history: logEntry, status: 'pending' }); }
+                if(hasAfternoon) { await databases.createDocument(DB_ID, COLL_APP, ID.unique(), { name: finalOwner, lab, date, equipment: eq, time: afternoonParams.join(', '), history: logEntry, status: 'pending' }); }
+            } else {
+                await databases.createDocument(DB_ID, COLL_APP, ID.unique(), { name: finalOwner, lab, date, equipment: eq, time: times.join(', '), history: logEntry, status: 'pending' });
+            }
+        }
+        
+        const isAdmin = SUPER_ADMINS.includes(currentUser.email);
+        
+        if (isAdmin && isEditAction && finalOwner !== currentUser.name) {
+            const userEmail = userMap[finalOwner]?.email || "Bilinmiyor"; if(userEmail !== "Bilinmiyor") sendEmail(userEmail, "Randevunuz Düzenlendi", `${date} tarihindeki randevunuz yönetici tarafından güncellendi.`);
+        } else if (!isAdmin) {
+            const supervisorEmails = LAB_EMAILS[lab]; 
+            if(isEditAction) sendEmail(supervisorEmails, `Randevu Düzenlendi`, `${currentUser.name}, ${date} tarihi için işlem yaptı.`);
+        }
+
+        alert("İşlem Başarılı!"); editingId = null; editingOwner = null; editingHistory = ""; selectedCells = []; 
+        refreshView(); loadUserData(); if(SUPER_ADMINS.includes(currentUser.email)) loadAdminData();
+    } catch (e) { alert("Hata: " + e.message); }
+}
+
+async function editRes(id, lab, date, equipStr, timeStr, owner, history) {
+    if (!canProcess(date, 'edit')) { alert("Süresi dolmuş randevular düzenlenemez!"); return; }
+    editingId = id; editingOwner = owner; editingHistory = history; selectedCells = [];
+    const eqArr = equipStr.split(', '); const tmArr = timeStr.split(', ');
+    eqArr.forEach(eq => { tmArr.forEach(tm => { selectedCells.push({ equip: eq, time: tm }); }); });
+    document.getElementById("editModeNotice").classList.remove("hidden");
+    document.getElementById("labSelect").value = lab; document.getElementById("resDate").value = date.split('T')[0];
+    
+    openUserTab('makeRes');
+    
+    await refreshView(); document.getElementById("bookingPage").classList.remove("hidden"); document.getElementById("bookingPage").scrollIntoView({ behavior: 'smooth' });
+}
+
+async function deleteRes(id, isAdmin) { 
+    if(!confirm("Silinsin mi?")) return; 
+    try {
+        const doc = await databases.getDocument(DB_ID, COLL_APP, id);
+        if (!isAdmin && !canProcess(doc.date, 'delete')) { alert("İptal süresi dolmuştur."); return; }
+
+        await databases.deleteDocument(DB_ID, COLL_APP, id);
+        
+        if (isAdmin && doc.name !== currentUser.name) {
+            const userEmail = userMap[doc.name]?.email || "Bilinmiyor"; if(userEmail !== "Bilinmiyor") sendEmail(userEmail, "Randevu İptali", `${doc.date} tarihindeki randevunuz yönetici tarafından iptal edildi.`);
+        } else if (!isAdmin) {
+            const supervisorEmails = LAB_EMAILS[doc.lab]; sendEmail(supervisorEmails, "Randevu İptali", `${doc.name}, ${doc.date} tarihindeki randevusunu iptal etti.`);
+        }
+
+        isAdmin ? loadAdminData() : loadUserData(); refreshView();
+    } catch(e) { alert("Hata: " + e.message); }
+}
+
+async function markResStatus(id, type, userName) {
+    if(!confirm(type === 'completed' ? "Randevu tamamlandı olarak işaretlensin mi?" : "Randevu GELMEDİ olarak işaretlenip kullanıcı banlansın mı?")) return;
+    
+    try {
+        // 1. Randevu Durumunu Güncelle
+        const statusVal = type === 'completed' ? 'completed' : 'noshow';
+        await databases.updateDocument(DB_ID, COLL_APP, id, { status: statusVal });
+
+        // 2. Eğer Gelmediyse Kullanıcıyı Banla
+        if (type === 'noshow') {
+            const profiles = await databases.listDocuments(DB_ID, COLL_PROFILES, [Query.equal('name', userName)]);
+            if(profiles.documents.length > 0) {
+                await databases.updateDocument(DB_ID, COLL_PROFILES, profiles.documents[0].$id, { blacklisted: true });
+                alert("Randevu 'Gelmedi' olarak işaretlendi ve kullanıcı KARA LİSTEYE alındı.");
+            } else {
+                alert("Randevu işaretlendi ancak kullanıcı profili bulunamadı (Banlanamadı).");
+            }
+        } else {
+            alert("Randevu başarıyla tamamlandı.");
+        }
+        loadAdminData();
+        loadUserProfiles(); // Ban durumunu güncelle
+    } catch(e) { alert("Hata: " + e.message); }
+}
+
+window.showDetails = function(id) {
+    const doc = appointmentsMap[id]; if(!doc) return alert("Veri bulunamadı.");
+    const userDetail = userMap[doc.name] || { id: '-', phone: '-' };
+    document.getElementById("modalDetails").innerHTML = `<b>Öğrenci:</b> ${doc.name} (${userDetail.id})<br><b>Telefon:</b> ${userDetail.phone}<br><b>Laboratuvar:</b> ${doc.lab}<br><b>Tarih:</b> ${formatDate(doc.date)}<br><b>Cihazlar:</b> ${doc.equipment}<br><b>Saatler:</b> ${doc.time}<br><b>Durum:</b> ${doc.status || 'pending'}`;
+    document.getElementById("modalLogs").innerText = doc.history || "Kayıt yok."; document.getElementById("detailModal").classList.add("active");
+}
+window.closeModal = function() { document.getElementById("detailModal").classList.remove("active"); }
+
+// SEKME GEÇİŞ FONKSİYONU - USER
+window.openUserTab = function(tabName) {
+    document.getElementById('tab-makeRes').classList.add('hidden');
+    document.getElementById('tab-myRes').classList.add('hidden');
+    document.getElementById('tab-myStudents').classList.add('hidden');
+    
+    document.getElementById('btn-makeRes').classList.remove('active');
+    document.getElementById('btn-myRes').classList.remove('active');
+    document.getElementById('btn-myStudents').classList.remove('active');
+
+    document.getElementById('tab-' + tabName).classList.remove('hidden');
+    document.getElementById('btn-' + tabName).classList.add('active');
+    
+    if(tabName === 'myRes') loadUserData();
+    if(tabName === 'myStudents') loadMyStudents();
+}
+
+// SEKME GEÇİŞ FONKSİYONU - ADMIN
+window.openAdminTab = function(tabName) {
+    const tabs = ['list', 'users', 'equip', 'cal'];
+    tabs.forEach(t => {
+        document.getElementById('adm-' + t).classList.add('hidden');
+        document.getElementById('btn-adm-' + t).classList.remove('active');
+    });
+    
+    document.getElementById('adm-' + tabName).classList.remove('hidden');
+    document.getElementById('btn-adm-' + tabName).classList.add('active');
+    
+    if(tabName === 'list') loadAdminData();
+    if(tabName === 'users') loadUserProfiles();
+}
+
+async function loadMyStudents() {
+    try {
+        const res = await databases.listDocuments(DB_ID, COLL_PROFILES, [Query.equal('advisor', currentUser.name), Query.limit(100)]);
+        
+        const pending = res.documents.filter(doc => doc.approved === false);
+        const active = res.documents.filter(doc => doc.approved !== false); // Mevcut (eski) kullanıcıların undefined/null olabileceği durumu için !== false kullandık
+
+        document.getElementById("pendingStudentsBody").innerHTML = pending.map(doc => `
+            <tr>
+                <td>${doc.studentId}</td>
+                <td>${doc.name}</td>
+                <td>${doc.email}<br><small>${doc.phone}</small></td>
+                <td><button onclick="approveStudent('${doc.$id}')" style="background:var(--success); color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer; font-size:11px;">Aktif Yap</button></td>
+            </tr>
+        `).join('');
+
+        document.getElementById("activeStudentsBody").innerHTML = active.map(doc => `
+            <tr>
+                <td>${doc.studentId}</td>
+                <td>${doc.name}</td>
+                <td>${doc.email}<br><small>${doc.phone}</small></td>
+                <td><span class="badge-completed">Aktif</span></td>
+            </tr>
+        `).join('');
+
+    } catch (e) {
+        console.error("Öğrenciler yüklenemedi:", e);
+    }
+}
+
+async function approveStudent(docId) {
+    if(!confirm("Öğrenciyi onaylamak istiyor musunuz?")) return;
+    try {
+        await databases.updateDocument(DB_ID, COLL_PROFILES, docId, { approved: true });
+        alert("Öğrenci başarıyla onaylandı.");
+        loadMyStudents();
+    } catch (e) {
+        alert("Hata: " + e.message);
+    }
+}
+
+async function loadAdminData() {
+    try {
+        const res = await databases.listDocuments(DB_ID, COLL_APP, []); 
+        res.documents.sort((a, b) => new Date(b.$createdAt) - new Date(a.$createdAt));
+        
+        document.getElementById("adminBody").innerHTML = res.documents.map(doc => {
+            appointmentsMap[doc.$id] = doc; if (doc.name === "LAB_KAPALI" || doc.name === "LAB_ACIK") return ""; 
+            
+            const past = !canProcess(doc.date, 'edit'); 
+            const userDetail = userMap[doc.name] || { id: '-', phone: '-' };
+            const status = doc.status || 'pending';
+            
+            let statusBadge = `<span class="badge-pending">Bekliyor</span>`;
+            if(status === 'completed') statusBadge = `<span class="badge-completed">Tamamlandı</span>`;
+            if(status === 'noshow') statusBadge = `<span class="badge-noshow">GELMEDİ</span>`;
+
+            // Admin Butonları (Sadece günü gelmiş veya geçmiş VE işlem yapılmamış randevular için)
+            let adminActions = "";
+            const isTodayOrPast = new Date(doc.date) <= new Date(); // Tarih kontrolü (Basitçe)
+            // Daha hassas kontrol:
+            const rDate = new Date(doc.date); rDate.setHours(23,59,59);
+            const now = new Date();
+            
+            if (now >= new Date(doc.date) && status === 'pending') {
+                adminActions = `<br><button class="btn-complete" onclick="markResStatus('${doc.$id}', 'completed', '${doc.name}')">✅ Tamamla</button>
+                                <button class="btn-noshow" onclick="markResStatus('${doc.$id}', 'noshow', '${doc.name}')">❌ Gelmedi</button>`;
+            }
+
+            return `<tr>
+                <td>${userDetail.id}</td>
+                <td>${doc.name}<br><small>${userDetail.phone}</small></td>
+                <td>${doc.lab}<br>${doc.equipment}</td>
+                <td>${formatDate(doc.date)} / ${doc.time}</td>
+                <td>${statusBadge}${adminActions}</td>
+                <td>
+                    <button class="info-btn" onclick="showDetails('${doc.$id}')">i</button>
+                    <button class="edit-btn" ${past ? 'disabled' : ''} onclick="editRes('${doc.$id}', '${doc.lab}', '${doc.date}', '${doc.equipment}', '${doc.time}', '${doc.name}', \`${doc.history || ''}\`)">Düz.</button>
+                    <button class="delete-btn" ${past ? 'disabled' : ''} onclick="deleteRes('${doc.$id}', true)">Sil</button>
+                </td>
+            </tr>`;
+        }).join('');
+    } catch(e) {
+        console.error("Admin veri hatası:", e);
+        document.getElementById("adminBody").innerHTML = `<tr><td colspan="7" style="color:red; text-align:center;">Veri yüklenemedi: ${e.message}</td></tr>`;
+    }
+}
+
+async function loadUserData() {
+    try {
+        const res = await databases.listDocuments(DB_ID, COLL_APP, [Query.equal('name', currentUser.name)]);
+        res.documents.sort((a, b) => new Date(b.$createdAt) - new Date(a.$createdAt));
+
+        document.getElementById("userBody").innerHTML = res.documents.map(doc => {
+            appointmentsMap[doc.$id] = doc;
+            const canEdit = canProcess(doc.date, 'edit'); const canDelete = canProcess(doc.date, 'delete');
+            const status = doc.status || 'pending';
+            
+            let statusBadge = `<span class="badge-pending">Bekliyor</span>`;
+            if(status === 'completed') statusBadge = `<span class="badge-completed">Tamamlandı</span>`;
+            if(status === 'noshow') statusBadge = `<span class="badge-noshow">GELMEDİ</span>`;
+
+            // Eğer tamamlandı veya gelmedi ise butonları gizle
+            const isProcessed = status !== 'pending';
+
+            return `<tr>
+                <td><b>${doc.lab}</b><br>${doc.equipment}</td>
+                <td>${statusBadge}</td>
+                <td>${formatDate(doc.date)}<br>${doc.time}</td>
+                <td>
+                    <button class="info-btn" onclick="showDetails('${doc.$id}')">i</button>
+                    <button class="edit-btn" ${canEdit && !isProcessed ? '' : 'disabled'} onclick="editRes('${doc.$id}', '${doc.lab}', '${doc.date}', '${doc.equipment}', '${doc.time}', '${doc.name}', \`${doc.history || ''}\`)">Düz.</button>
+                    <button class="delete-btn" ${canDelete && !isProcessed ? '' : 'disabled'} onclick="deleteRes('${doc.$id}', false)">İptal</button>
+                </td>
+            </tr>`;
+        }).join('');
+    } catch(e) {
+        console.error("Kullanıcı veri hatası:", e);
+        document.getElementById("userBody").innerHTML = `<tr><td colspan="3" style="color:red; text-align:center;">Veri yüklenemedi: ${e.message}</td></tr>`;
+    }
+}
+
+// Yeni Eklenen Fonksiyonlar
+function toggleAdvisor() {
+    const domain = document.getElementById("regDomain").value;
+    const advGroup = document.getElementById("advisorGroup");
+    if (domain === "@ogr.ikc.edu.tr") {
+        advGroup.classList.remove("hidden");
+    } else {
+        advGroup.classList.add("hidden");
+    }
+}
+
+async function loadAdvisors() {
+    try {
+        const res = await databases.listDocuments(DB_ID, COLL_PROFILES, [Query.limit(100)]);
+        const select = document.getElementById("regAdvisor");
+        select.innerHTML = '<option value="">Danışman Seçiniz (Zorunlu)</option>';
+        res.documents.forEach(u => {
+            // Sadece akademik hesapların listeye eklenmesi
+            if (u.email && u.email.split('@')[1] === 'ikc.edu.tr') {
+                const opt = document.createElement("option");
+                opt.value = u.name;
+                opt.text = u.name;
+                select.appendChild(opt);
+            }
+        });
+    } catch(e) { console.log("Danışman yükleme hatası", e); }
+}
+
+async function checkSession() {
+    try {
+        currentUser = await account.get();
+        
+        // ÖĞRENCİ ONAY KONTROLÜ
+        const profileRes = await databases.listDocuments(DB_ID, COLL_PROFILES, [Query.equal('email', currentUser.email)]);
+        if (profileRes.documents.length > 0) {
+            const prof = profileRes.documents[0];
+            if (currentUser.email.includes('@ogr.ikc.edu.tr') && prof.approved === false) {
+                alert("Hesabınız henüz danışmanınız tarafından onaylanmamıştır. Lütfen onay bekleyiniz.");
+                await account.deleteSession('current');
+                return;
+            }
+        }
+
+        document.getElementById("loginPage").classList.add("hidden"); document.getElementById("bookingPage").classList.remove("hidden");
+        document.getElementById("userGreet").innerText = "Merhaba, " + currentUser.name;
+        
+        if (currentUser.email.includes('@ikc.edu.tr')) {
+            document.getElementById("btn-myStudents").classList.remove("hidden");
+        }
+
+        if(SUPER_ADMINS.includes(currentUser.email)) { document.getElementById("adminLink").classList.remove("hidden"); await loadUserProfiles(); listAdminEquipments(); loadAdminData(); tempAdminChanges = []; }
+        loadUserData();
+    } catch (e) {}
+}
+async function handleLogin() { const email = document.getElementById("loginId").value.trim() + document.getElementById("loginDomain").value; try { await account.createEmailSession(email, document.getElementById("loginPass").value); location.reload(); } catch (e) { alert(e.message); } }
+
+async function handleRegister() { 
+    const domain = document.getElementById("regDomain").value;
+    const idVal = document.getElementById("regId").value.trim(); 
+    const email = idVal + domain;
+    const pass = document.getElementById("regPass").value; 
+    const name = document.getElementById("regFullName").value; 
+    const phone = document.getElementById("regPhone").value.trim();
+    
+    let advisor = "";
+    if (domain === "@ogr.ikc.edu.tr") {
+        advisor = document.getElementById("regAdvisor").value;
+        if (!advisor) return alert("Lütfen danışman öğretim üyesi seçiniz!");
+    }
+    
+    const rulesCheck = document.getElementById("regRulesCheck").checked;
+    if(!rulesCheck) return alert("Lütfen kuralları okuyup kabul ettiğinizi onaylayın.");
+    
+    if(!phone) return alert("Telefon zorunlu!");
+    try { 
+        await account.create(ID.unique(), email, pass, name); 
+        await account.createEmailSession(email, pass); 
+        await account.updatePrefs({ phone: phone });
+        
+        try { 
+            // Danışman bilgisi ve onay durumu veritabanına ekleniyor
+            await databases.createDocument(DB_ID, COLL_PROFILES, ID.unique(), { 
+                studentId: idVal, 
+                name: name, 
+                phone: phone, 
+                email: email, 
+                blacklisted: false, 
+                advisor: advisor,
+                approved: domain === "@ikc.edu.tr" // Akademisyenler direkt aktif, öğrenciler onay bekliyor
+            }); 
+        } catch(err) { console.log("Profil oluşturulurken hata:", err); }
+        
+        await account.createVerification("https://mmeikclab.github.io/booking/"); 
+        alert("Kayıt başarılı. Onay ve doğrulama maillerinizi kontrol ediniz."); 
+        await account.deleteSession('current'); 
+        switchPage('loginPage'); 
+    } catch (e) { alert(e.message); } 
+}
+
+async function loadAdminCalendar() { const lab = document.getElementById("adminViewLab").value, date = document.getElementById("adminViewDate").value; const eqs = await databases.listDocuments(DB_ID, COLL_EQUIP, [Query.equal('lab', lab)]); await renderCalendar(lab, date, "adminCalHead", "adminCalBody", true, eqs.documents); }
+function switchPage(id) { document.querySelectorAll('.box > div').forEach(d => d.classList.add('hidden')); document.getElementById(id).classList.remove('hidden'); }
+async function logout() { await account.deleteSession('current'); location.reload(); }
+
+function formatDate(dateStr) {
+    if (!dateStr) return "";
+    const d = new Date(dateStr);
+    return `${d.getDate().toString().padStart(2, '0')}.${(d.getMonth() + 1).toString().padStart(2, '0')}.${d.getFullYear()}`;
+}
+
+window.onload = async () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const userId = urlParams.get('userId'), secret = urlParams.get('secret');
+    if (userId && secret) {
+        try { await account.updateVerification(userId, secret);
+            const msg = document.getElementById("verifyMessage"); msg.innerText = "✅ Hesabınız başarıyla onaylandı!"; msg.classList.remove("hidden"); msg.classList.add("verify-success");
+            window.history.replaceState({}, document.title, window.location.pathname);
+        } catch (error) { const msg = document.getElementById("verifyMessage"); msg.innerText = "❌ Hata: " + error.message; msg.classList.remove("hidden"); msg.classList.add("verify-error"); }
+    }
+    checkSession();
+    loadAdvisors(); // Danışmanları sayfa yüklenirken getirir
+};
+</script>
+</body>
+</html>

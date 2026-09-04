@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Üniversite Randevu Sistemi
 
 Öğrencilerin ve akademisyenlerin görüşme randevularını kolayca yönetebildiği tam yığın (full-stack) web uygulaması.
@@ -128,3 +129,6 @@ npm run build        # üretim derlemesi
 npm run lint         # kod denetimi
 npm run setup:appwrite  # Appwrite şemasını oluşturur
 ```
+=======
+# lab-randevu
+>>>>>>> 71ec192ee80dcc0d6122ac8d6206d0dc36245cbe
