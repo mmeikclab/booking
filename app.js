@@ -208,6 +208,7 @@ async function danismanlariYukle() {
 
 // Sayfa yüklendiğinde bu fonksiyonu otomatik çalıştır
 
+// Sayfa yüklendiğinde bu fonksiyonu otomatik çalıştır
 document.addEventListener('DOMContentLoaded', async () => {
     danismanlariYukle();
 
@@ -223,7 +224,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     } catch (error) {
         // Oturum yoksa veya hata verirse hiçbir şey yapma
     }
-});
+}); 
 
 async function sifreSifirlamaGonder() {
     const inputId = document.getElementById('kurtarmaId').value.trim();
