@@ -223,7 +223,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     } catch (error) {
         // Oturum yoksa veya hata verirse hiçbir şey yapma
     }
-}
+});
 
 async function sifreSifirlamaGonder() {
     const inputId = document.getElementById('kurtarmaId').value.trim();
