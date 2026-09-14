@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>İKÇÜ Lab - Giriş ve Kayıt</title>
+    <style>
+        :root {
+            --primary-dark: #1e293b;
+            --accent: #3b82f6;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #334155;
+            --border-color: #e2e8f0;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .auth-container {
+            background-color: var(--card-bg);
+            width: 100%;
+            max-width: 450px;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            border: 1px solid var(--border-color);
+        }
+
+        .header-text {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header-text h1 {
+            color: var(--primary-dark);
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+
+        .header-text p {
+            color: #64748b;
+            font-size: 14px;
+        }
+
+        /* Sekme Butonları (Giriş / Kayıt) */
+        .tab-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+            background: #f1f5f9;
+            padding: 5px;
+            border-radius: 8px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            background: transparent;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            color: #64748b;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .tab-btn.active {
+            background: white;
+            color: var(--accent);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        /* Form Elemanları */
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: var(--primary-dark);
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 14px;
+            outline: none;
+            transition: border 0.3s, box-shadow 0.3s;
+            background-color: #f8fafc;
+        }
+
+        input:focus, select:focus {
+            border-color: var(--accent);
+            background-color: white;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .btn-submit {
+            width: 100%;
+            background-color: var(--accent);
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+            margin-top: 10px;
+        }
+
+        .btn-submit:hover {
+            background-color: #2563eb;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 15px;
+            font-size: 13px;
+            color: #64748b;
+        }
+
+        .checkbox-group input {
+            width: auto;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* İki sütunlu alanlar için */
+        .row {
+            display: flex;
+            gap: 15px;
+        }
+        .row .form-group {
+            flex: 1;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="auth-container">
+        <div class="header-text">
+            <h1>İKÇÜ Lab Yönetimi</h1>
+            <p>Laboratuvar randevu ve cihaz yönetim sistemi</p>
+        </div>
+
+        <div class="tab-buttons">
+            <button id="btnGirisTab" class="tab-btn active" onclick="formDegistir('giris')">Giriş Yap</button>
+            <button id="btnKayitTab" class="tab-btn" onclick="formDegistir('kayit')">Kayıt Ol</button>
+        </div>
+
+        <!-- GİRİŞ FORMU -->
+        <div id="girisFormu">
+            <div class="form-group">
+                <label>Öğrenci No / Kurumsal ID</label>
+                <input type="text" id="loginEmail" placeholder="Sadece numaranızı veya kurumsal ID'nizi girin">
+            </div>
+            <div class="form-group">
+                <label>Şifre</label>
+                <input type="password" id="loginPassword" placeholder="Şifrenizi girin">
+                <div style="text-align: right; margin-top: 5px;">
+                    <a href="#" onclick="sifreSifirlamaEkrani()" style="font-size: 13px; color: var(--accent); text-decoration: none;">Şifremi Unuttum</a>
+                </div>
+            </div>
+            <button class="btn-submit" onclick="girisYap()">Sisteme Giriş Yap</button>
+        </div>
+
+        <!-- YENİ: ŞİFRE SIFIRLAMA FORMU -->
+        <div id="sifremiUnuttumFormu" class="hidden">
+            <h3 style="color: var(--primary-dark); font-size: 18px; margin-bottom: 10px;">Şifre Sıfırlama</h3>
+            <p style="font-size: 13px; color: #64748b; margin-bottom: 15px;">Okul numaranızı veya kurumsal ID'nizi girin. Sıfırlama bağlantısı kayıtlı e-posta adresinize gönderilecektir.</p>
+            <div class="form-group">
+                <label>Numara veya ID</label>
+                <input type="text" id="kurtarmaId" placeholder="Örn: 160411006">
+            </div>
+            <button class="btn-submit" onclick="sifreSifirlamaGonder()">Sıfırlama Bağlantısı Gönder</button>
+            <button class="btn-submit" style="background-color: #94a3b8; margin-top: 10px;" onclick="formDegistir('giris')">Geri Dön</button>
+        </div>
+
+        <!-- KAYIT FORMU -->
+        <div id="kayitFormu" class="hidden">
+            <div class="form-group">
+                <label>Kullanıcı Rolü</label>
+                <select id="userType" onchange="rolArayuzDegistir()">
+                    <option value="ogrenci">Öğrenci</option>
+                    <option value="akademik">Akademik Personel</option>
+                </select>
+            </div>
+
+            <!-- Öğrenci Kayıt Alanları -->
+            <div id="ogrenciAlanlari">
+                <div class="form-group">
+                    <label>Öğrenci Numarası</label>
+                    <input type="text" id="ogrId" placeholder="Öğrenci No">
+                </div>
+                <div class="row">
+                    <div class="form-group">
+                        <label>Ad</label>
+                        <input type="text" id="ogrAd" placeholder="Adınız">
+                    </div>
+                    <div class="form-group">
+                        <label>Soyad</label>
+                        <input type="text" id="ogrSoyad" placeholder="Soyadınız">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Telefon</label>
+                    <input type="text" id="ogrTelefon" placeholder="05XX XXX XX XX">
+                </div>
+                <div class="form-group">
+                    <label>Danışman Hoca</label>
+                    <select id="ogrDanisman">
+                        <!-- Danışman listesi JS ile çekilip buraya eklenebilir. Şimdilik manuel ID veya yok verilebilir -->
+                        <option value="hoca1_id">Prof. Dr. Örnek Hoca</option>
+                        <option value="hoca2_id">Doç. Dr. Deneme Hoca</option>
+                    </select>
+                </div>
+                <div class="row">
+                    <div class="form-group">
+                        <label>Şifre</label>
+                        <input type="password" id="ogrSifre" placeholder="Şifre belirleyin">
+                    </div>
+                    <div class="form-group">
+                        <label>Şifre (Tekrar)</label>
+                        <input type="password" id="ogrSifreTekrar" placeholder="Şifreyi doğrulayın">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Akademik Personel Kayıt Alanları -->
+            <div id="akademikAlanlari" class="hidden">
+                <div class="form-group">
+                    <label>Kurumsal Sicil / E-posta Ön Eki</label>
+                    <input type="text" id="akademikId" placeholder="Örn: ad.soyad">
+                </div>
+                <div class="row">
+                    <div class="form-group">
+                        <label>Ad</label>
+                        <input type="text" id="akdAd" placeholder="Adınız">
+                    </div>
+                    <div class="form-group">
+                        <label>Soyad</label>
+                        <input type="text" id="akdSoyad" placeholder="Soyadınız">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="form-group">
+                        <label>Şifre</label>
+                        <input type="password" id="akdSifre" placeholder="Şifre belirleyin">
+                    </div>
+                    <div class="form-group">
+                        <label>Şifre (Tekrar)</label>
+                        <input type="password" id="akdSifreTekrar" placeholder="Şifreyi doğrulayın">
+                    </div>
+                </div>
+            </div>
+
+            <div class="checkbox-group">
+                <input type="checkbox" id="kabulOnay">
+                <label for="kabulOnay" style="margin: 0;">Laboratuvar kurallarını okudum ve kabul ediyorum.</label>
+            </div>
+
+            <button class="btn-submit" onclick="kayitOl()">Kayıt İşlemini Tamamla</button>
+        </div>
+    </div>
+
+    <!-- Sadece Arayüz Geçişlerini Yöneten Küçük Script -->
+    <script>
+        function formDegistir(formTipi) {
+            const girisForm = document.getElementById('girisFormu');
+            const kayitForm = document.getElementById('kayitFormu');
+            const sifreForm = document.getElementById('sifremiUnuttumFormu');
+            const btnGiris = document.getElementById('btnGirisTab');
+            const btnKayit = document.getElementById('btnKayitTab');
+
+            sifreForm.classList.add('hidden'); // Her durumda önce bunu gizle
+
+            if (formTipi === 'giris') {
+                girisForm.classList.remove('hidden');
+                kayitForm.classList.add('hidden');
+                btnGiris.classList.add('active');
+                btnKayit.classList.remove('active');
+            } else if (formTipi === 'kayit') {
+                girisForm.classList.add('hidden');
+                kayitForm.classList.remove('hidden');
+                btnGiris.classList.remove('active');
+                btnKayit.classList.add('active');
+            }
+        }
+
+        function sifreSifirlamaEkrani() {
+            document.getElementById('girisFormu').classList.add('hidden');
+            document.getElementById('kayitFormu').classList.add('hidden');
+            document.getElementById('sifremiUnuttumFormu').classList.remove('hidden');
+        }
+
+        function rolArayuzDegistir() {
+            const secilenRol = document.getElementById('userType').value;
+            const ogrAlanlari = document.getElementById('ogrenciAlanlari');
+            const akdAlanlari = document.getElementById('akademikAlanlari');
+
+            if (secilenRol === 'ogrenci') {
+                ogrAlanlari.classList.remove('hidden');
+                akdAlanlari.classList.add('hidden');
+            } else {
+                ogrAlanlari.classList.add('hidden');
+                akdAlanlari.classList.remove('hidden');
+            }
+        }
+    </script>
+
+    <!-- Appwrite CDN ve Ana JS Dosyası (Veritabanı işlemleri app.js içinde yapılmaya devam edecek) -->
+    <script src="https://cdn.jsdelivr.net/npm/appwrite@14.0.1"></script>
+    <script src="app.js"></script>
+
+
+</body>
+</html>
