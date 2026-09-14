@@ -261,4 +261,4 @@ async function sifreSifirlamaGonder() {
         alert("Şifre sıfırlama e-postası okul mail adresinize gönderildi! (Gereksiz/Spam kutusunu kontrol etmeyi unutmayın)");
         formDegistir('giris');
     }
-});
+}
