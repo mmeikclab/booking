@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>İKÇÜ Lab - Giriş ve Kayıt</title>
+        
+        <style>
+        :root {
+            --primary-dark: #1e293b;
+            --accent: #3b82f6;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #334155;
+            --border-color: #e2e8f0;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .auth-container {
+            background-color: var(--card-bg);
+            width: 100%;
+            max-width: 450px;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            border: 1px solid var(--border-color);
+        }
+
+        .header-text {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header-text h1 {
+            color: var(--primary-dark);
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+
+        .header-text p {
+            color: #64748b;
+            font-size: 14px;
+        }
+
+        /* Sekme Butonları (Giriş / Kayıt) */
+        .tab-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+            background: #f1f5f9;
+            padding: 5px;
+            border-radius: 8px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            background: transparent;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            color: #64748b;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .tab-btn.active {
+            background: white;
+            color: var(--accent);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        /* Form Elemanları */
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: var(--primary-dark);
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 14px;
+            outline: none;
+            transition: border 0.3s, box-shadow 0.3s;
+            background-color: #f8fafc;
+        }
+
+        input:focus, select:focus {
+            border-color: var(--accent);
+            background-color: white;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .btn-submit {
+            width: 100%;
+            background-color: var(--accent);
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+            margin-top: 10px;
+        }
+
+        .btn-submit:hover {
+            background-color: #2563eb;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 15px;
+            font-size: 13px;
+            color: #64748b;
+        }
+
+        .checkbox-group input {
+            width: auto;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* İki sütunlu alanlar için */
+        .row {
+            display: flex;
+            gap: 15px;
+        }
+        .row .form-group {
+            flex: 1;
+        }
+
+        /* Laboratuvar Kuralları Modal Tasarımı */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.65);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+
+        .modal-box {
+            background: white;
+            width: 100%;
+            max-width: 650px;
+            max-height: 85vh;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+
+        .modal-header {
+            padding: 20px 25px;
+            background: var(--primary-dark);
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h3 {
+            font-size: 16px;
+            line-height: 1.4;
+        }
+
+        .modal-close {
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            font-size: 24px;
+            cursor: pointer;
+            line-height: 1;
+        }
+
+        .modal-close:hover { color: white; }
+
+        .modal-body {
+            padding: 25px;
+            overflow-y: auto;
+            font-size: 14px;
+            line-height: 1.65;
+            color: var(--text-main);
+        }
+
+        .modal-body ol {
+            padding-left: 20px;
+        }
+
+        .modal-body li {
+            margin-bottom: 12px;
+            text-align: justify;
+        }
+
+        .modal-body ol ol {
+            list-style-type: lower-alpha;
+            margin-top: 8px;
+            padding-left: 22px;
+        }
+
+        .modal-signature {
+            text-align: right;
+            font-weight: 600;
+            color: var(--primary-dark);
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .modal-footer {
+            padding: 15px 25px;
+            background: #f8fafc;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .scroll-hint {
+            font-size: 12px;
+            color: #d97706;
+            font-weight: 600;
+        }
+
+        .btn-kabul {
+            background-color: #10b981;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-kabul:disabled {
+            background-color: #cbd5e1;
+            color: #64748b;
+            cursor: not-allowed;
+        }
+
+        .kural-link {
+            color: var(--accent);
+            font-weight: 600;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="auth-container">
+        <div class="header-text">
+            <h1>İKÇÜ Lab Yönetimi</h1>
+            <p>Laboratuvar randevu ve cihaz yönetim sistemi</p>
+        </div>
+
+        <div class="tab-buttons">
+            <button id="btnGirisTab" class="tab-btn active" onclick="formDegistir('giris')">Giriş Yap</button>
+            <button id="btnKayitTab" class="tab-btn" onclick="formDegistir('kayit')">Kayıt Ol</button>
+        </div>
+
+        <!-- GİRİŞ FORMU -->
+        <div id="girisFormu">
+            <div class="form-group">
+                <label>Öğrenci No / Kurumsal ID</label>
+                <input type="text" id="loginEmail" placeholder="Sadece numaranızı veya kurumsal ID'nizi girin">
+            </div>
+            <div class="form-group">
+                <label>Şifre</label>
+                <input type="password" id="loginPassword" placeholder="Şifrenizi girin">
+                <div style="text-align: right; margin-top: 5px;">
+                    <a href="#" onclick="sifreSifirlamaEkrani()" style="font-size: 13px; color: var(--accent); text-decoration: none;">Şifremi Unuttum</a>
+                </div>
+            </div>
+            <button class="btn-submit" onclick="girisYap()">Sisteme Giriş Yap</button>
+        </div>
+
+        <!-- YENİ: ŞİFRE SIFIRLAMA FORMU -->
+        <div id="sifremiUnuttumFormu" class="hidden">
+            <h3 style="color: var(--primary-dark); font-size: 18px; margin-bottom: 10px;">Şifre Sıfırlama</h3>
+            <p style="font-size: 13px; color: #64748b; margin-bottom: 15px;">Okul numaranızı veya kurumsal ID'nizi girin. Sıfırlama bağlantısı kayıtlı e-posta adresinize gönderilecektir.</p>
+            <div class="form-group">
+                <label>Numara veya ID</label>
+                <input type="text" id="kurtarmaId" placeholder="Örn: 160411006">
+            </div>
+            <button class="btn-submit" onclick="sifreSifirlamaGonder()">Sıfırlama Bağlantısı Gönder</button>
+            <button class="btn-submit" style="background-color: #94a3b8; margin-top: 10px;" onclick="formDegistir('giris')">Geri Dön</button>
+        </div>
+
+        <!-- KAYIT FORMU -->
+        <div id="kayitFormu" class="hidden">
+            <div class="form-group">
+                <label>Kullanıcı Rolü</label>
+                <select id="userType" onchange="rolArayuzDegistir()">
+                    <option value="ogrenci">Öğrenci</option>
+                    <option value="akademik">Akademik Personel</option>
+                </select>
+            </div>
+
+            <!-- Öğrenci Kayıt Alanları -->
+            <div id="ogrenciAlanlari">
+                <div class="form-group">
+                    <label>Öğrenci Numarası</label>
+                    <input type="text" id="ogrId" placeholder="Öğrenci No">
+                </div>
+                <div class="row">
+                    <div class="form-group">
+                        <label>Ad</label>
+                        <input type="text" id="ogrAd" placeholder="Adınız">
+                    </div>
+                    <div class="form-group">
+                        <label>Soyad</label>
+                        <input type="text" id="ogrSoyad" placeholder="Soyadınız">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Telefon</label>
+                    <input type="text" id="ogrTelefon" placeholder="05XX XXX XX XX">
+                </div>
+                <div class="form-group">
+                    <label>Danışman Hoca</label>
+                    <select id="ogrDanisman">
+                        <!-- Danışman listesi JS ile çekilip buraya eklenebilir. Şimdilik manuel ID veya yok verilebilir -->
+                        <option value="hoca1_id">Prof. Dr. Örnek Hoca</option>
+                        <option value="hoca2_id">Doç. Dr. Deneme Hoca</option>
+                    </select>
+                </div>
+                <div class="row">
+                    <div class="form-group">
+                        <label>Şifre</label>
+                        <input type="password" id="ogrSifre" placeholder="Şifre belirleyin">
+                    </div>
+                    <div class="form-group">
+                        <label>Şifre (Tekrar)</label>
+                        <input type="password" id="ogrSifreTekrar" placeholder="Şifreyi doğrulayın">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Akademik Personel Kayıt Alanları -->
+            <div id="akademikAlanlari" class="hidden">
+                <div class="form-group">
+                    <label>Kurumsal Sicil / E-posta Ön Eki</label>
+                    <input type="text" id="akademikId" placeholder="Örn: ad.soyad">
+                </div>
+                <div class="row">
+                    <div class="form-group">
+                        <label>Ad</label>
+                        <input type="text" id="akdAd" placeholder="Adınız">
+                    </div>
+                    <div class="form-group">
+                        <label>Soyad</label>
+                        <input type="text" id="akdSoyad" placeholder="Soyadınız">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="form-group">
+                        <label>Şifre</label>
+                        <input type="password" id="akdSifre" placeholder="Şifre belirleyin">
+                    </div>
+                    <div class="form-group">
+                        <label>Şifre (Tekrar)</label>
+                        <input type="password" id="akdSifreTekrar" placeholder="Şifreyi doğrulayın">
+                    </div>
+                </div>
+            </div>
+
+            <div class="checkbox-group">
+                <input type="checkbox" id="kabulOnay" disabled>
+                <label for="kabulOnay" style="margin: 0;">
+                    <span class="kural-link" onclick="kurallariAc()">Laboratuvar kurallarını</span> okudum, anladım ve kabul ediyorum.
+                </label>
+            </div>
+
+            <button class="btn-submit" onclick="kayitOl()">Kayıt İşlemini Tamamla</button>
+        </div>
+    </div>
+
+    <!-- LABORATUVAR KURALLARI MODALI -->
+    <div id="kurallarModal" class="modal-overlay hidden">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3>METALURJİ VE MALZEME MÜHENDİSLİĞİ BÖLÜM LABORATUVARLARI<br>ÇALIŞMA YÖNERGESİ VE KURALLARI</h3>
+                <button class="modal-close" onclick="kurallariKapat()">&times;</button>
+            </div>
+            <div id="kurallarIcerik" class="modal-body" onscroll="okumaKontrol()">
+                <ol>
+                    <li>Laboratuvar kullanımında randevu sistemi esastır. Sistem üzerinden önceden onaylanmış randevusu bulunmayan araştırmacıların ve öğrencilerin laboratuvarda çalışma yapması kesinlikle yasaktır.</li>
+                    <li>Laboratuvarda bulunan cihaz ve diğer imkanların kullanılması için randevu sistemi üzerinden randevu talebi oluşturması, ve danışman hocanın randevu talebini onaylaması gerekmektedir.</li>
+                    <li>Randevu sistemi üzerinden bulunulan gün içinde randevu alınamaz.</li>
+                    <li>Alınan randevu, en geç randevudan 2 gün önce saat 23:59'a kadar düzenlenebilir, en geç randevudan 1 gün önce saat 23:59'a kadar iptal edilebilir.</li>
+                    <li>Alınan randevuya icap edilmemesi halinde;
+                        <ol>
+                            <li>Cihaz kullanımı için rezervasyon yaptıran ilgili kişi belirlenen gün ve saatte randevusuna gelmediği durumda, danışman hoca bölümün uygun gördüğü yaptırımlara uymak zorundadır. Aksi halde, rezervasyonuna uymayan ilgili kişi 1 hafta boyunca laboratuvarda bulunan cihazlarla ilgili randevu oluşturamayacaktır.</li>
+                            <li>Üst üste 2. rezervasyonuna uymayan ilgili kişi 2 hafta boyunca laboratuvarda bulunan cihazlarla ilgili randevu oluşturamayacaktır.</li>
+                            <li>Üst üste 3. rezervasyonuna uymayan ilgili kişi 3 hafta boyunca laboratuvarda bulunan cihazlarla ilgili randevu oluşturamayacaktır.</li>
+                        </ol>
+                    </li>
+                    <li>Her kullanıcının haftalık 15 cihaz/saat hakkı bulunur. Bu hakka ek olarak uzun süreli kullanımı bulunan cihazlarda (örneğin ısıl işlem fırını, etüv vs.) toplamda 3 hakkı olacak şekilde 9 saat kullanım hakkı vardır. Çalışmanın gerekliliğine göre daha fazla hak için sorumlu hoca ile görüşülmesi gerekmektedir.</li>
+                    <li>Laboratuvar sınırları içerisinde akademik nezaket kurallarına riayet edilmeli; diğer araştırmacıların, öğrencilerin ve personelin çalışmalarını sekteye uğratacak veya konsantrasyonu bozacak her türlü hal ve davranıştan kaçınılmalıdır.</li>
+                    <li>Çalışma alanının güvenliğini ve düzenini tehlikeye atmamak adına; çanta, dış giyim (mont, kaban vb.) gibi kişisel eşyalar laboratuvar içerisine alınmamalıdır. Bu eşyalar koridorda araştırmacılara ve öğrencilere tahsis edilen dolaplarda muhafaza edilmelidir.</li>
+                    <li>Kontaminasyon riskini önlemek ve iş güvenliğini sağlamak amacıyla, laboratuvar alanına hiçbir surette yiyecek, içecek veya tütün ürünü sokulmamalı ve tüketilmemelidir.</li>
+                    <li>İş sağlığı ve güvenliği protokolleri gereği, laboratuvar içerisinde standart laboratuvar önlüğünün önü ilikli şekilde giyilmesi zorunludur. Numune kesme, parlatma veya dağlama gibi spesifik riskler barındıran çalışmalarda işleme uygun koruyucu ekipmanların (koruyucu gözlük, nitril/asit eldiveni, maske vb.) kullanımı elzemdir.</li>
+                    <li>Kimyasal dağlama (etching) işlemleri, asit hazırlama ve zehirli/uçucu gaz çıkışına sebep olabilecek tüm prosedürler istisnasız olarak çeker ocak içerisinde gerçekleştirilmelidir.</li>
+                    <li>Deney veya işlem bitiminde, kullanılan cihaza ait log (kayıt) defterlerinin eksiksiz ve doğru bir biçimde doldurulması zorunludur. Kayıt prosedürünün ihmal edilmesi, randevuya icabet edilmediği şeklinde değerlendirilecek olup, ilgili araştırmacının veya öğrencinin sistem üzerinden kısıtlanmasına/cezalı duruma düşmesine yol açacaktır.</li>
+                    <li>Çalışma hitamında kullanılan tezgahlar, sarf malzemeler ve cihazlar usulüne uygun bir şekilde temizlenmeli, dezenfeksiyonu sağlanmalı ve çalışma alanı bir sonraki araştırmacıya veya öğrenciye standartlara uygun, eksiksiz bir şekilde teslim edilmelidir.</li>
+                    <li>Cihaz ve ekipmanlarda çalışma esnasında veya öncesinde meydana gelebilecek teknik arıza, kalibrasyon hatası veya olağandışı durumlara bireysel müdahalede bulunulmamalıdır. Durum ivedilikle laboratuvardan sorumlu akademik personele rapor edilmelidir.</li>
+                    <li>Aktif olarak çalışan, özellikle döner aksamlı veya ısıl işlem gerektiren cihazlar laboratuvarda kesinlikle onaysız çalıştırılmamalıdır.</li>
+                </ol>
+                <div class="modal-signature">
+                    Bölüm Başkanı<br>
+                    Prof. Dr. Fethullah Güneş
+                </div>
+            </div>
+            <div class="modal-footer">
+                <span id="okumaUyari" class="scroll-hint">Onaylamak için metni en alta kadar kaydırın.</span>
+                <button id="btnKuralOnayla" class="btn-kabul" onclick="kurallariKabulEt()" disabled>Okudum, Anladım ve Kabul Ediyorum</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sadece Arayüz Geçişlerini Yöneten Küçük Script -->
+    <script>
+        function formDegistir(formTipi) {
+            const girisForm = document.getElementById('girisFormu');
+            const kayitForm = document.getElementById('kayitFormu');
+            const sifreForm = document.getElementById('sifremiUnuttumFormu');
+            const btnGiris = document.getElementById('btnGirisTab');
+            const btnKayit = document.getElementById('btnKayitTab');
+
+            sifreForm.classList.add('hidden'); // Her durumda önce bunu gizle
+
+            if (formTipi === 'giris') {
+                girisForm.classList.remove('hidden');
+                kayitForm.classList.add('hidden');
+                btnGiris.classList.add('active');
+                btnKayit.classList.remove('active');
+            } else if (formTipi === 'kayit') {
+                girisForm.classList.add('hidden');
+                kayitForm.classList.remove('hidden');
+                btnGiris.classList.remove('active');
+                btnKayit.classList.add('active');
+            }
+        }
+
+        function sifreSifirlamaEkrani() {
+            document.getElementById('girisFormu').classList.add('hidden');
+            document.getElementById('kayitFormu').classList.add('hidden');
+            document.getElementById('sifremiUnuttumFormu').classList.remove('hidden');
+        }
+
+        function rolArayuzDegistir() {
+            const secilenRol = document.getElementById('userType').value;
+            const ogrAlanlari = document.getElementById('ogrenciAlanlari');
+            const akdAlanlari = document.getElementById('akademikAlanlari');
+
+            if (secilenRol === 'ogrenci') {
+                ogrAlanlari.classList.remove('hidden');
+                akdAlanlari.classList.add('hidden');
+            } else {
+                ogrAlanlari.classList.add('hidden');
+                akdAlanlari.classList.remove('hidden');
+            }
+        }
+
+        function kurallariAc() {
+            const modal = document.getElementById('kurallarModal');
+            const icerik = document.getElementById('kurallarIcerik');
+            modal.classList.remove('hidden');
+            icerik.scrollTop = 0;
+
+            // Ekran çok büyükse ve kaydırma çubuğu hiç çıkmadıysa butonu direkt aktif et
+            if (icerik.scrollHeight <= icerik.clientHeight + 5) {
+                okumaTamamlandi();
+            }
+        }
+
+        function kurallariKapat() {
+            document.getElementById('kurallarModal').classList.add('hidden');
+        }
+
+        function okumaKontrol() {
+            const icerik = document.getElementById('kurallarIcerik');
+            // En alta ulaşıldığında (10px tolerans ile) onay butonunu aç
+            if (icerik.scrollTop + icerik.clientHeight >= icerik.scrollHeight - 10) {
+                okumaTamamlandi();
+            }
+        }
+
+        function okumaTamamlandi() {
+            document.getElementById('btnKuralOnayla').disabled = false;
+            const uyari = document.getElementById('okumaUyari');
+            uyari.innerText = "Kuralları onaylayabilirsiniz.";
+            uyari.style.color = "#10b981";
+        }
+
+        function kurallariKabulEt() {
+            const checkbox = document.getElementById('kabulOnay');
+            checkbox.disabled = false;
+            checkbox.checked = true;
+            kurallariKapat();
+        }
+    </script>
+
+    <!-- Appwrite CDN ve Ana JS Dosyası (Veritabanı işlemleri app.js içinde yapılmaya devam edecek) -->
+    <script src="https://cdn.jsdelivr.net/npm/appwrite@14.0.1"></script>
+    <script src="app.js"></script>
+
+
+</body>
+</html>

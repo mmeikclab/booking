@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-Posta Doğrulama - İKÇÜ Lab</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: #f8fafc; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .container { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); width: 100%; max-width: 420px; text-align: center; }
+        h2 { color: #1e293b; margin-bottom: 15px; }
+        p { color: #64748b; font-size: 14px; margin-bottom: 20px; }
+        button { width: 100%; background-color: #3b82f6; color: white; border: none; padding: 14px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2 id="baslik">E-Posta Doğrulanıyor...</h2>
+        <p id="mesaj">Lütfen bekleyin, doğrulama işleminiz tamamlanıyor.</p>
+        <button id="btnGiris" class="hidden" onclick="window.location.href='index.html'">Giriş Sayfasına Git</button>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/appwrite@14.0.1"></script>
+    <script>
+        const { Client, Account } = Appwrite;
+        const client = new Client()
+            .setEndpoint('https://fra.cloud.appwrite.io/v1')
+            .setProject('6a9c491d0023fea6607e');
+        const account = new Account(client);
+
+        window.onload = async () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const userId = urlParams.get('userId');
+            const secret = urlParams.get('secret');
+
+            const baslik = document.getElementById('baslik');
+            const mesaj = document.getElementById('mesaj');
+            const btnGiris = document.getElementById('btnGiris');
+
+            if (!userId || !secret) {
+                baslik.innerText = "Geçersiz Bağlantı";
+                baslik.style.color = "#ef4444";
+                mesaj.innerText = "Doğrulama bağlantısı eksik veya hatalı.";
+                btnGiris.classList.remove('hidden');
+                return;
+            }
+
+            try {
+                await account.updateVerification(userId, secret);
+                baslik.innerText = "E-Posta Doğrulandı!";
+                baslik.style.color = "#10b981";
+                mesaj.innerText = "Kurumsal e-posta adresiniz başarıyla doğrulandı. Artık sisteme giriş yapabilirsiniz.";
+                btnGiris.classList.remove('hidden');
+            } catch (error) {
+                baslik.innerText = "Doğrulama Başarısız";
+                baslik.style.color = "#ef4444";
+                mesaj.innerText = "Bağlantının süresi dolmuş olabilir veya daha önce kullanılmış. Hata: " + error.message;
+                btnGiris.classList.remove('hidden');
+            }
+        };
+    </script>
+</body>
+</html>

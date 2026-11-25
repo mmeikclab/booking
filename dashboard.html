@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>İKÇÜ Laboratuvar Yönetim Sistemi</title>
+    <style>
+        :root {
+            --primary: #1e3a8a;
+            --primary-dark: #1e293b;
+            --accent: #3b82f6;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #334155;
+            --border-color: #e2e8f0;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Sidebar Tasarımı */
+        .sidebar {
+            width: 280px;
+            background-color: var(--primary-dark);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 4px 0 10px rgba(0,0,0,0.05);
+        }
+
+        .sidebar-header {
+            padding: 25px 20px;
+            background-color: #0f172a;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .sidebar-header h2 {
+            font-size: 18px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            color: #f8fafc;
+        }
+
+        .menu-container {
+            padding: 20px 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            flex-grow: 1;
+            overflow-y: auto;
+        }
+
+        .menu-btn {
+            background: transparent;
+            color: #94a3b8;
+            border: none;
+            padding: 12px 15px;
+            text-align: left;
+            font-size: 14px;
+            font-weight: 500;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .menu-btn:hover {
+            background-color: rgba(255,255,255,0.05);
+            color: #ffffff;
+        }
+
+        .menu-btn.active {
+            background-color: var(--accent);
+            color: white;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        .logout-container {
+            padding: 20px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .logout-btn {
+            background-color: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+            width: 100%;
+            border: none;
+            padding: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+
+        .logout-btn:hover {
+            background-color: var(--danger);
+            color: white;
+        }
+
+        /* Ana İçerik Alanı */
+        .main-content {
+            flex-grow: 1;
+            padding: 40px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--card-bg);
+            padding: 20px 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+            border: 1px solid var(--border-color);
+        }
+
+        .top-bar h1 {
+            font-size: 22px;
+            color: #1e293b;
+        }
+
+        /* Tab İçerikleri */
+        .tab-content {
+            display: none;
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);
+            border: 1px solid var(--border-color);
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        .tab-content.active-tab {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .tab-content h3 {
+            font-size: 20px;
+            color: #1e293b;
+            margin-bottom: 8px;
+        }
+
+        .tab-content p {
+            color: #64748b;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Form Elemanları ve Filtreler */
+        .filter-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+            background: #f1f5f9;
+            padding: 15px;
+            border-radius: 8px;
+            align-items: center;
+        }
+
+        select, input {
+            padding: 10px 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 14px;
+            outline: none;
+            background: white;
+            color: var(--text-main);
+        }
+
+        select:focus, input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        /* Şık Tablolar */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
+
+        th, td {
+            padding: 14px 16px;
+            text-align: left;
+            font-size: 14px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            background-color: #f8fafc;
+            color: #475569;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 12px;
+            letter-spacing: 0.5px;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover td {
+            background-color: #f8fafc;
+        }
+
+        /* Butonlar */
+        .btn {
+            background-color: var(--accent);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 13px;
+            transition: background 0.2s;
+        }
+
+        .btn:hover {
+            background-color: #2563eb;
+        }
+
+        .btn-danger {
+            background-color: var(--danger);
+        }
+        .btn-danger:hover {
+            background-color: #dc2626;
+        }
+
+        .btn-success {
+            background-color: var(--success);
+        }
+        .btn-success:hover {
+            background-color: #059669;
+        }
+
+        /* Uyarı Kutusu */
+        .alert-box {
+            background-color: #fef3c7;
+            border-left: 4px solid var(--warning);
+            padding: 15px 20px;
+            border-radius: 6px;
+            color: #92400e;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Sol Menü (Sidebar) -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h2>İKÇÜ Lab Yönetimi</h2>
+        </div>
+        <div class="menu-container">
+            <button id="btnRandevuAlma" class="menu-btn hidden" onclick="sekmeAc('randevuAlma')">📅 Randevu Alma</button>
+            <button id="btnRandevularim" class="menu-btn hidden" onclick="sekmeAc('randevularim'); randevularimiGetir()">📋 Randevularım</button>
+            <button id="btnOgrencilerim" class="menu-btn hidden" onclick="sekmeAc('ogrencilerim'); ogrencilerimiGetir()">👥 Öğrencilerim</button>
+            <button id="btnOgrenciRandevulari" class="menu-btn hidden" onclick="sekmeAc('ogrenciRandevulari'); ogrenciRandevulariniGetir()">⏳ Öğrenci Randevuları</button>
+            <button id="btnTumOgrenciler" class="menu-btn hidden" onclick="sekmeAc('tumOgrenciler'); tumOgrencileriGetir()">🎓 Tüm Öğrenciler (Admin)</button>
+            <button id="btnLabYonetimi" class="menu-btn hidden" onclick="sekmeAc('labYonetimi'); labYonetimEkraniniGetir()">⚙️ Lab & Cihaz Yönetimi</button>
+            <button id="btnCezaYonetimi" class="menu-btn hidden" onclick="sekmeAc('cezaYonetimi'); cezaVerileriniGetir()">🚨 Ceza Yönetimi</button>
+        </div>
+        <div class="logout-container">
+            <button class="logout-btn" onclick="cikisYap()">Çıkış Yap</button>
+        </div>
+    </div>
+
+    <!-- Sağ Ana İçerik -->
+    <div class="main-content">
+        <div class="top-bar">
+            <h1 id="karsilamaMesaji">Yükleniyor...</h1>
+            <!-- YENİ: Admin paneli geçiş butonu -->
+            <button id="btnAdminToggle" class="btn hidden" style="background-color: #8b5cf6; color: white; padding: 10px 20px; font-weight: bold;" onclick="adminPaneliniGecisYap()">⚙️ Admin Paneline Geç</button>
+            <button id="btnTumOgrenciler" class="menu-btn hidden admin-menu-btn" onclick="sekmeAc('tumOgrenciler'); tumOgrencileriGetir()">🎓 Tüm Öğrenciler (Admin)</button>
+            <button id="btnLabYonetimi" class="menu-btn hidden admin-menu-btn" onclick="sekmeAc('labYonetimi'); labYonetimEkraniniGetir()">⚙️ Lab & Cihaz Yönetimi</button>
+            <button id="btnCezaYonetimi" class="menu-btn hidden admin-menu-btn" onclick="sekmeAc('cezaYonetimi'); cezaVerileriniGetir()">🚨 Ceza Yönetimi</button>
+        </div>
+
+        <!-- Onay Bekliyor Uyarısı -->
+        <!-- Onay Bekliyor Uyarısı -->
+        <div id="onayUyarisi" class="tab-content alert-box hidden" style="display: block;">
+            <b>Hesabınız Onay Bekliyor:</b> Danışmanınız hesabınızı onaylayana kadar randevu alma işlemleriniz kısıtlıdır.
+        </div>
+
+        <!-- YENİ: Ceza Uyarısı (Sadece cezası aktif olanlarda görünür) -->
+        <div id="cezaUyarisi" class="tab-content alert-box hidden" style="display: block; background-color: #fef2f2; border-left-color: #ef4444; color: #991b1b; margin-bottom: 20px;">
+            <b>🚨 Ceza Durumu:</b> <span id="cezaMetniAlani">Cezalısınız.</span>
+        </div>
+
+
+        <!-- 1. Randevu Alma Sekmesi -->
+        <div id="randevuAlma" class="tab-content">
+            <h3>Laboratuvar Rezervasyon Matrisi</h3>
+            <p>Laboratuvar ve tarih seçerek uygun cihaz saatlerini görüntüleyin ve randevunuzu oluşturun.</p>
+            
+            <div class="filter-row">
+                <div>
+                    <label style="font-size: 13px; font-weight: 600; display: block; margin-bottom: 5px;">Laboratuvar:</label>
+                    <select id="labSecim" onchange="matrisiGuncelle()">
+                        <option value="">-- Laboratuvar Seçin --</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size: 13px; font-weight: 600; display: block; margin-bottom: 5px;">Tarih Seçimi:</label>
+                    <input type="date" id="tarihSecim" onchange="matrisiGuncelle()">
+                </div>
+            </div>
+
+            <div id="matrisAlani" style="overflow-x: auto;">
+                <p style="color: #64748b;">Lütfen sol üstten laboratuvar ve tarih seçimi yapınız.</p>
+            </div>
+        </div>
+
+        <!-- Kalan Kota Gösterimi (Sadece Öğrencilere Görünür) -->
+        <div id="kotaBilgisi" style="background: #e0f2fe; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #bae6fd; display: none;">
+            <h4 style="color: #0369a1; margin-bottom: 8px;">Seçilen Haftadaki Kullanım Kotanız</h4>
+            <p style="color: #0c4a6e; font-size: 14px; margin:0;">
+                Normal Cihazlar: <b id="kalanNormalSaat" style="font-size: 16px;">Hesaplanıyor...</b> saat kaldı <small>(Maks 15 Saat)</small><br>
+                Uzun Kullanım (Blok): <b id="kalanUzunBlok" style="font-size: 16px;">Hesaplanıyor...</b> blok kaldı <small>(Maks 3 Blok)</small>
+            </p>
+        </div>
+
+        <!-- 2. Randevularım Sekmesi -->
+        <div id="randevularim" class="tab-content">
+            <h3>Randevularım</h3>
+            <p>Aktif randevularınızı buradan görüntüleyebilir, kurallar çerçevesinde iptal edebilirsiniz.</p>
+            <div id="randevularimListesi">
+                <p>Randevularınız yükleniyor...</p>
+            </div>
+        </div>
+
+        <!-- 3. Öğrencilerim Sekmesi -->
+        <div id="ogrencilerim" class="tab-content">
+            <h3>Danışmanlık Öğrenci Onayları</h3>
+            <p>Danışmanlığını yaptığınız ve sisteme kayıt olan öğrenciler buradan onaylanabilir.</p>
+            <div id="ogrencilerimListesi">
+                <p>Öğrenciler yükleniyor...</p>
+            </div>
+        </div>
+
+        <!-- 4. Öğrenci Randevuları Sekmesi -->
+        <div id="ogrenciRandevulari" class="tab-content">
+            <h3>Öğrenci Randevu Onayları</h3>
+            <p>Danışmanı olduğunuz öğrencilerin laboratuvar randevularını onaylayabilir veya reddedebilirsiniz.</p>
+            <div id="ogrenciRandevulariListesi">
+                <p>Randevular yükleniyor...</p>
+            </div>
+        </div>
+
+        <!-- 5. Tüm Öğrenciler (Admin) Sekmesi -->
+        <div id="tumOgrenciler" class="tab-content">
+            <h3>Sistemdeki Tüm Öğrenciler</h3>
+            <p>Sisteme kayıtlı tüm öğrencilerin genel listesi ve ceza aşamaları.</p>
+            <div id="tumOgrencilerListesi"><p>Yükleniyor...</p></div>
+        </div>
+
+
+
+        <!-- 6. Lab ve Cihaz Yönetimi Sekmesi -->
+        <!-- 6. Lab ve Cihaz Yönetimi Sekmesi -->
+        <!-- 6. Lab ve Cihaz Yönetimi Sekmesi -->
+        <div id="labYonetimi" class="tab-content">
+            <h3>Laboratuvar ve Cihaz Yönetimi</h3>
+            <p>Sisteme yeni laboratuvar veya cihaz ekleyebilir, mevcut olanları silebilir ya da güncelleyebilirsiniz.</p>
+            
+            <!-- Laboratuvar Yönetimi Paneli (İÇERİ TAŞINDI) -->
+            <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin-bottom: 25px; border: 1px solid #e2e8f0;">
+                <h3 style="color: #1e293b; margin-bottom: 15px;">Laboratuvar Yönetimi</h3>
+                
+                <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                    <input type="text" id="yeniLabIsmi" placeholder="Yeni Laboratuvar Adı (Örn: Malzeme Karakterizasyon)" style="flex: 1; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1;">
+                    <button class="btn btn-success" onclick="labEkle()" style="padding: 10px 20px;">+ Lab Ekle</button>
+                </div>
+
+                <div id="adminLabListesiAlani">
+                    <p>Laboratuvarlar yükleniyor...</p>
+                </div>
+            </div>
+
+            <!-- Cihaz Ekleme Paneli -->
+            <div style="background: #f1f5f9; padding: 20px; border-radius: 8px; margin-bottom: 25px; border: 1px solid var(--border-color);">
+                <h4 style="margin-bottom: 12px; color: #1e293b; font-size: 15px;">Yeni Cihaz Ekle</h4>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <select id="yeniCihazLabSecim" style="flex: 1; min-width: 200px;"></select>
+                    <input type="text" id="yeniCihazIsmi" placeholder="Cihaz İsmi" style="flex: 1; min-width: 150px;">
+                    <select id="yeniCihazTip" style="flex: 1; min-width: 150px;">
+                        <option value="normal">Normal (Saatlik)</option>
+                        <option value="uzun">Uzun Blok (3 Saat)</option>
+                    </select>
+                    <input type="number" id="yeniCihazKapasite" placeholder="Kapasite" value="4" style="width: 90px;">
+                    <button class="btn btn-success" onclick="cihazEkle()">Cihazı Kaydet</button>
+                </div>
+            </div>
+
+            <!-- Matris Blok Kapatma / Açma Paneli -->
+            <!-- Özel Saat Matris Kapatma Paneli -->
+            <div style="background: #fff7ed; padding: 20px; border-radius: 8px; margin-bottom: 25px; border: 1px solid #ffedd5;">
+                <h4 style="margin-bottom: 12px; color: #c2410c; font-size: 15px;">Özel Saat / Blok Kapatma Matrisi</h4>
+                
+                <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px;">
+                    <input type="date" id="adminBlokTarih" style="flex: 1; max-width: 200px;" onchange="adminBlokMatrisiCiz()">
+                    <select id="adminBlokLabSecim" style="flex: 1; max-width: 250px;" onchange="adminBlokMatrisiCiz()">
+                        <option value="">-- Laboratuvar Seçin --</option>
+                    </select>
+                </div>
+                
+                <div id="adminBlokMatrisAlani" style="overflow-x: auto;">
+                    <p style="font-size: 13px; color: #9a3412;">Lütfen matrisi görüntülemek için tarih ve laboratuvar seçin.</p>
+                </div>
+            </div>
+
+            <div id="labYonetimListesi"><p>Cihazlar yükleniyor...</p></div>
+        </div>
+
+        <!-- 7. Ceza Yönetimi Sekmesi -->
+        <div id="cezaYonetimi" class="tab-content">
+            <h3>Devamsızlık ve Ceza Yönetimi</h3>
+            <p>Randevusuna gelmeyen öğrencileri işaretleyerek 3 aşamalı ceza sistemini uygulayabilirsiniz.</p>
+            <div id="cezaListesiAlani">
+                <p>Veriler yükleniyor...</p>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Appwrite CDN Kütüphanesi -->
+    <script src="https://cdn.jsdelivr.net/npm/appwrite@13.0.0"></script>
+    <script src="app.js"></script>
+    <script src="dashboard.js"></script>
+</body>
+</html>
